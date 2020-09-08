@@ -1,0 +1,38 @@
+{
+    "name": "node-can-bridge",
+    "version": "0.0.1",
+    "author": "REV Robotics",
+    "description": "Get CAN Data",
+    "license": "MIT",
+    "main": "dist/binding.js",
+    "types": "dist/binding.d.ts",
+    "dependencies": {
+        "bindings": "^1.5.0",
+        "node-addon-api": "^1.1.0",
+        "prebuild-install": "^5.3.5"
+    },
+    "devDependencies": {
+        "@types/node": "^14.0.27",
+        "node-gyp": "^7.1.0",
+        "prebuild": "^10.0.0",
+        "typescript": "^3.9.7"
+    },
+    "peerDependencies": {
+        "node-gyp": "^7.0.0"
+    },
+    "scripts": {
+        "install": "prebuild-install || node-gyp rebuild",
+        "pretest": "node-gyp build && tsc",
+        "test": "node --napi-modules test/test_binding.js",
+        "publish": "node-gyp rebuild && prebuild -t 80 -r electron"
+    },
+    "engines": {
+        "node": ">=12.0.0"
+    },
+    "binary": {
+        "napi_versions": [
+            3
+        ]
+    },
+    "gypfile": true
+}
