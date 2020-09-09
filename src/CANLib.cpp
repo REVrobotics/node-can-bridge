@@ -1,43 +1,38 @@
 #include <iostream>
-#include "CANBridge.h"
-#include "napi.h"
+#include <rev/CANBridge.h>
+#include <napi.h>
+#include <thread>
+#include <chrono>
+#include "CANLib.h"
 
-c_CANBridge_ScanHandle CANHandle;
+class CanWorker : public Napi::AsyncWorker {
+    public:
+        CanWorker(Napi::Function& callback)
+        : AsyncWorker(callback) {}
 
-void scanForDevices() {
-    if (CANHandle != NULL) {
+        ~CanWorker() {}
+    void Execute() override {
+        c_CANBridge_ScanHandle CANHandle = CANBridge_Scan();
+        std::cout << "Completed scan" << std::endl;
+        numDevices = CANBridge_NumDevices(CANHandle);
         CANBridge_FreeScan(CANHandle);
+        numDevices = 3;
     }
 
-    CANHandle = CANBridge_Scan();
-}
-
-void cleanup() {
-    if (CANHandle != NULL) {
-        CANBridge_FreeScan(CANHandle);
-    }
-}
-
-void printDeviceNames() {
-    if (CANHandle == NULL) {
-        scanForDevices();
+    void OnOK() override {
+        Napi::HandleScope scope(Env());
+        Callback().Call({Env().Null(), Napi::Number::New(Env(),numDevices)});
     }
 
-    int numDevices = CANBridge_NumDevices(CANHandle);
-    for (int i=0;i<numDevices;i++) {
-        std::cout << "\t" << CANBridge_GetDeviceName(CANHandle, i) << " - " << CANBridge_GetDeviceDescriptor(CANHandle, i) << " - " << CANBridge_GetDriverName(CANHandle, i) << std::endl;
-    }
-}
+    private:
+    int numDevices = 0;
+};
 
-c_CANBridge_ScanHandle getDevices() {
-    scanForDevices();
-    return CANHandle;
-}
 
-Napi::Number getNumDevices(const Napi::CallbackInfo& info) {
-    scanForDevices();
-    int numDevices = CANBridge_NumDevices(CANHandle);
+Napi::Value getNumDevices(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
-    return Napi::Number::New(env, numDevices);
+    Napi::Function cb = info[0].As<Napi::Function>();
+    CanWorker* wk = new CanWorker(cb);
+    wk->Queue();
+    return info.Env().Undefined();
 }
-

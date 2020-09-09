@@ -1,11 +1,15 @@
 {
     "name": "node-can-bridge",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "author": "REV Robotics",
     "description": "Get CAN Data",
     "license": "MIT",
     "main": "dist/binding.js",
     "types": "dist/binding.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/REVrobotics/node-can-bridge.git"
+    },
     "dependencies": {
         "bindings": "^1.5.0",
         "node-addon-api": "^1.1.0",

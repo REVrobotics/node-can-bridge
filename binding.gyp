@@ -4,7 +4,7 @@
       'target_name': 'addon',
       'sources': [
         'src/addon.cpp',
-        "CANBridge/"
+        'src/CANLib.cpp',
        ],
       'include_dirs': [
         "src/",
@@ -15,7 +15,9 @@
         "NAPI_VERSION=<(napi_build_version)"
       ],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
-      'libraries': ['-l<(module_root_dir)/CANBridge/CANBridge86-64.lib'],
+      'libraries': [
+            '-l<(module_root_dir)/CANBridge/x86-64/CANBridge.lib',
+      ],
       'cflags!': [ '-fno-exceptions' ],
       'cflags_cc!': [ '-fno-exceptions' ],
       'xcode_settings': {
