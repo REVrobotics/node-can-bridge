@@ -3,8 +3,8 @@
     {
       'target_name': 'addon',
       'sources': [
-        'src/addon.cpp',
-        'src/CANLib.cpp',
+        'src/addon.cc',
+        'src/canWrapper.cc',
        ],
       'include_dirs': [
         "src/",
@@ -16,17 +16,10 @@
       ],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
       'libraries': [
-            '-l<(module_root_dir)/CANBridge/x86-64/CANBridge.lib',
+            '-l<(module_root_dir)/CANBridge/x86-64/CANBridge.lib'
       ],
-      'cflags!': [ '-fno-exceptions' ],
-      'cflags_cc!': [ '-fno-exceptions' ],
-      'xcode_settings': {
-        'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-        'CLANG_CXX_LIBRARY': 'libc++',
-        'MACOSX_DEPLOYMENT_TARGET': '10.7'
-      },
       'msvs_settings': {
-        'VCCLCompilerTool': { 'ExceptionHandling': 1 },
+        'VCCLCompilerTool': { 'ExceptionHandling': 1},
       }
     }
   ]

@@ -1,1 +1,1 @@
-export declare const getNumDevices: () => Promise<Number>;
+export declare const getDevices: () => Promise<any>;

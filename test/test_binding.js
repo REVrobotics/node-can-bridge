@@ -2,19 +2,22 @@
 const addon = require("../dist/binding.js");
 const assert = require("assert").strict;
 
-assert(addon.getNumDevices, "The expected function is undefined");
-
-console.log(addon);
-async function testBasic() {
-    await new Promise(async (resolve) =>
-    {
-        const getNumDevices = await addon.getNumDevices;
-        console.log(getNumDevices);
-        getNumDevices().then((result) => {
-            console.log("result", result);
-            resolve();
-        }).catch((error) => console.log("error", error));
-    });
+async function testGetDevices() {
+    assert(addon.getDevices, "The expected function is undefined");
+    const getDevices = await addon.getDevices;
+    getDevices()
+        .then((devices) => {
+            console.log(`Found ${devices.length} device(s)`);
+            devices.forEach((device) => {
+                console.log(device);
+                assert(device.hasOwnProperty("descriptor"), "Device does not have a desctiptor");
+                assert(device.hasOwnProperty("name"), "Device does not have a name");
+                assert(device.hasOwnProperty("driverName"), "Device does not have a driver name");
+            });
+        })
+        .catch((error) => {
+            assert(false, error);
+        });
 }
 
-testBasic().then(() => console.log("Done"));
+testGetDevices();
