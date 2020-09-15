@@ -9,5 +9,6 @@ void openStreamSession(const Napi::CallbackInfo& info);
 Napi::Value readStreamSession(const Napi::CallbackInfo& info);
 void closeStreamSession(const Napi::CallbackInfo& info);
 void unregisterDeviceFromHAL(const Napi::CallbackInfo& info);
+void getCANDetailStatus(const Napi::CallbackInfo& info);
 
 #endif

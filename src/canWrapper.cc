@@ -284,33 +284,18 @@ class ReadStreamSessionWorker : public Napi::AsyncWorker {
         HAL_CANStreamMessage* messages;
 };
 
-class CallbackErrorWorker : public Napi::AsyncWorker {
-    public:
-        CallbackErrorWorker (Napi::Function& callback, std::string errorMessage)
-        : AsyncWorker(callback), errorMessage(errorMessage) {}
-
-    void Execute() override {}
-
-    void OnOK() override {
-        Napi::HandleScope scope(Env());
-        Callback().Call({Napi::String::New(Env(), errorMessage)});
-    }
-
-    private:
-        std::string errorMessage;
-};
-
 // Params:
 //   descriptor: String
 //   messagesToRead: Number
 // Returns:
-//   messages: Array<Array<Number>>
+//   messages: Array<Object{messageID:Number, timeStamp:Number, data:Array<Number>}>
 Napi::Value readStreamSession(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t messagesToRead = info[1].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[2].As<Napi::Function>();
 
+    // TODO: handle device / session not found
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) throw DeviceNotFound;
     uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
@@ -348,4 +333,35 @@ void closeStreamSession(const Napi::CallbackInfo& info) {
 
     rev::usb::CANStatus status = deviceIterator->second->CloseStreamSession(sessionHandle);
     cb.Call(env.Global(), {env.Null(), Napi::Number::New(env, (int)status)});
+}
+
+// Params:
+//   descriptor: String
+// Returns:
+//   status: Object{percentBusUtilization:Number, busOff:Number, txFull:Number, receiveErr:Number, transmitError:Number}
+void getCANDetailStatus(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    Napi::Function cb = info[1].As<Napi::Function>();
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) {
+        cb.Call(env.Global(), {Napi::String::New(env, DEVICE_NOT_FOUND_ERROR)});
+        return;
+    }
+
+    float percentBusUtilization;
+    uint32_t busOff;
+    uint32_t txFull;
+    uint32_t receiveErr;
+    uint32_t transmitErr;
+    deviceIterator->second->GetCANDetailStatus(&percentBusUtilization, &busOff, &txFull, &receiveErr, &transmitErr);
+
+    Napi::Object status = Napi::Object::New(env);
+    status.Set("percentBusUtilization", percentBusUtilization);
+    status.Set("busOff", busOff);
+    status.Set("txFull", txFull);
+    status.Set("receiveErr", receiveErr);
+    status.Set("transmitErr", transmitErr);
+    cb.Call({env.Null(), status});
 }

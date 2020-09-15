@@ -11,3 +11,4 @@ export const openStreamSession: (descriptor:string, messageId:Number, messageMas
 export const readStreamSession: (descriptor:string, messagesToRead:number) =>
     Promise<any> = promisify(addon.readStreamSession);
 export const closeStreamSession: (descriptor:string) => Promise<Number> = promisify(addon.closeStreamSession);
+export const getCANDetailStatus: (descriptor:string) => Promise<Object> = promisify(addon.getCANDetailStatus);

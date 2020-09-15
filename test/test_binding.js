@@ -81,6 +81,7 @@ async function testReadStreamSession() {
         await new Promise(resolve=>{setTimeout(resolve, 500)});
         const data = await addon.readStreamSession(devices[0].descriptor, 1);
         console.log("Got stream", data);
+        await new Promise(resolve=>{setTimeout(resolve, 500)});
     } catch(error) {
         assert.fail(error);
     }
@@ -97,11 +98,23 @@ async function testCloseStreamSession() {
     }
 }
 
+async function testGetCANDetailStatus() {
+    assert(addon.getCANDetailStatus, "getCANDetailStatus is undefined");
+    try {
+        if (devices.length ===  0) return;
+        const status = await addon.getCANDetailStatus(devices[0].descriptor);
+        console.log("CAN Status:", status);
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 testGetDevices()
     .then(testReceiveMessage)
     .then(testOpenStreamSession)
     .then(testReadStreamSession)
     .then(testCloseStreamSession)
+    .then(testGetCANDetailStatus)
     .catch((error)  => {
         console.log(error);
     });
