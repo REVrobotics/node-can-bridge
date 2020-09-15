@@ -146,6 +146,7 @@ class RegisterDeviceToHALWorker : public Napi::AsyncWorker {
         int32_t status = -1;
 };
 
+// TODO: verify params
 // Params:
 //   descriptor: Number
 //   messageId: Number
@@ -257,35 +258,46 @@ class ReadStreamSessionWorker : public Napi::AsyncWorker {
         ReadStreamSessionWorker(Napi::Function& callback, uint32_t messagesRead, HAL_CANStreamMessage* messages)
         : AsyncWorker(callback), messagesRead(messagesRead), messages(messages) {}
 
-    void Execute() override {
-        messagesJSON = "[";
-        for (uint32_t i = 0; i < messagesRead; i++) {
-            messagesJSON += "{messageID: " + std::to_string(messages[i].messageID) + ", timeStamp: " + std::to_string(messages[i].timeStamp) + ", data:[";
-            size_t messageLength = std::min((int)messages[i].dataSize, 8);
-            for (int m = 0; m < messageLength; m++) {
-                messagesJSON += std::to_string((int)messages[i].data[m]);
-                if (m < messageLength-1) messagesJSON+=", ";
-            }
-            messagesJSON += "]}";
-            if (i < messagesRead-1) messagesJSON += ", ";
-        }
-
-        messagesJSON  += "]";
-    }
+    void Execute() override {}
 
     void OnOK() override {
         Napi::HandleScope scope(Env());
-        Callback().Call({Env().Null(), Napi::String::New(Env(), messagesJSON)});
-    }
+        Napi::Array messageArray = Napi::Array::New(Env(), messagesRead);
+        for (uint32_t i = 0; i < messagesRead; i++) {
+            Napi::Object message = Napi::Object::New(Env());
+            message.Set("messageID", messages[i].messageID);
+            message.Set("timeStamp", messages[i].timeStamp);
 
-    void OnError(const Napi::Error& e) override {
-        std::cout << e.what() << std::endl;
+            size_t messageLength = std::min((int)messages[i].dataSize, 8);
+            Napi::Array data = Napi::Array::New(Env(), messageLength);
+            for (int m = 0; m < messageLength; m++) {
+                data[m] = Napi::Number::New(Env(), messages[i].data[m]);
+            }
+            message.Set("data", data);
+            messageArray[i] = message;
+        }
+        Callback().Call({Env().Null(), messageArray});
     }
 
     private:
-        std::string messagesJSON;
         uint32_t messagesRead;
         HAL_CANStreamMessage* messages;
+};
+
+class CallbackErrorWorker : public Napi::AsyncWorker {
+    public:
+        CallbackErrorWorker (Napi::Function& callback, std::string errorMessage)
+        : AsyncWorker(callback), errorMessage(errorMessage) {}
+
+    void Execute() override {}
+
+    void OnOK() override {
+        Napi::HandleScope scope(Env());
+        Callback().Call({Napi::String::New(Env(), errorMessage)});
+    }
+
+    private:
+        std::string errorMessage;
 };
 
 // Params:
@@ -300,14 +312,13 @@ Napi::Value readStreamSession(const Napi::CallbackInfo& info) {
     Napi::Function cb = info[2].As<Napi::Function>();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-            if (deviceIterator == CANDeviceMap.end()) throw DeviceNotFound;
-            uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
-            if (sessionHandle == NULL) throw StreamNotFound;
+    if (deviceIterator == CANDeviceMap.end()) throw DeviceNotFound;
+    uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
+    if (sessionHandle == NULL) throw StreamNotFound;
 
-            HAL_CANStreamMessage* messages;
-            uint32_t messagesRead = 0;
-                    deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
-
+    HAL_CANStreamMessage* messages;
+    uint32_t messagesRead = 0;
+    deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
 
     ReadStreamSessionWorker* wk = new ReadStreamSessionWorker(cb, messagesRead, messages);
     wk->Queue();

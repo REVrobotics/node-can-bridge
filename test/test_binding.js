@@ -53,9 +53,9 @@ async function testUnregisterDeviceFromHAL() {
 async function testReceiveMessage() {
     assert(addon.receiveMessage, "receiveMessage is undefined");
     try {
-        const receiveMessage = await addon.receiveMessage;
         if (devices.length ===  0) return;
-        const message = await receiveMessage(devices[0].descriptor, 0, 0);
+        await new Promise(resolve=>{setTimeout(resolve, 200)});
+        const message = await addon.receiveMessage(devices[0].descriptor, 0, 0);
         assert.equal(message.length, 8, "Message does not have correct length");
         console.log("Got message", message);
     } catch(error) {
@@ -66,9 +66,8 @@ async function testReceiveMessage() {
 async function testOpenStreamSession() {
     assert(addon.openStreamSession, "openStreamSession is undefined");
     try {
-        const openStreamSession = await addon.openStreamSession;
         if (devices.length ===  0) return;
-        const status = await openStreamSession(devices[0].descriptor, 0, 0, 8);
+        const status = await addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
         assert.equal(status, 0, "Opening stream failed");
     } catch(error) {
         assert.fail(error);
@@ -78,24 +77,20 @@ async function testOpenStreamSession() {
 async function testReadStreamSession() {
     assert(addon.readStreamSession, "readStreamSession is undefined");
     try {
-        const readStreamSession = await addon.readStreamSession;
         if (devices.length ===  0) return;
-        await new Promise(resolve=>{setTimeout(resolve, 1000)});
-        const status = await readStreamSession(devices[0].descriptor, 1);
-        console.log("Read Result", status);
+        await new Promise(resolve=>{setTimeout(resolve, 500)});
+        const data = await addon.readStreamSession(devices[0].descriptor, 1);
+        console.log("Got stream", data);
     } catch(error) {
-        console.log(error);
         assert.fail(error);
     }
 }
 
 async function testCloseStreamSession() {
     assert(addon.closeStreamSession, "closeStreamSession is undefined");
-    await new Promise(resolve=>{setTimeout(resolve, 1000)});
     try {
-        const closeStreamSession = await addon.closeStreamSession;
         if (devices.length ===  0) return;
-        const status = await closeStreamSession(devices[0].descriptor);
+        const status = await addon.closeStreamSession(devices[0].descriptor);
         assert.equal(status, 0, "Closing stream failed");
     } catch(error) {
         assert.fail(error);
