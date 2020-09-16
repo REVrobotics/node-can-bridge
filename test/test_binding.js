@@ -55,7 +55,7 @@ async function testReceiveMessage() {
     try {
         if (devices.length ===  0) return;
         await new Promise(resolve=>{setTimeout(resolve, 200)});
-        const message = await addon.receiveMessage(devices[0].descriptor, 0, 0);
+        const message = addon.receiveMessage(devices[0].descriptor, 0, 0);
         console.log("Got message", message);
     } catch(error) {
         assert.fail(error);
@@ -66,7 +66,7 @@ async function testOpenStreamSession() {
     assert(addon.openStreamSession, "openStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = await addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
+        const status = addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
         assert.equal(status, 0, "Opening stream failed");
     } catch(error) {
         assert.fail(error);
@@ -75,14 +75,13 @@ async function testOpenStreamSession() {
 
 async function testReadStreamSession() {
     assert(addon.readStreamSession, "readStreamSession is undefined");
+    if (devices.length === 0) return;
     try {
-        if (devices.length ===  0) return;
-        await new Promise(resolve=>{setTimeout(resolve, 500)});
-        const data = await addon.readStreamSession(devices[0].descriptor, 1);
-        console.log("Got stream", data);
-        await new Promise(resolve=>{setTimeout(resolve, 500)});
-    } catch(error) {
-        assert.fail(error);
+        await new Promise(resolve => {setTimeout(resolve, 200)});
+        const data = addon.readStreamSession(devices[0].descriptor, 4);
+        console.log("Got stream:", data);
+    } catch (error) {
+        console.log(error);
     }
 }
 
@@ -90,7 +89,7 @@ async function testCloseStreamSession() {
     assert(addon.closeStreamSession, "closeStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = await addon.closeStreamSession(devices[0].descriptor);
+        const status = addon.closeStreamSession(devices[0].descriptor);
         assert.equal(status, 0, "Closing stream failed");
     } catch(error) {
         assert.fail(error);
@@ -101,12 +100,16 @@ async function testGetCANDetailStatus() {
     assert(addon.getCANDetailStatus, "getCANDetailStatus is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = await addon.getCANDetailStatus(devices[0].descriptor);
+        const status = addon.getCANDetailStatus(devices[0].descriptor);
         console.log("CAN Status:", status);
     } catch(error) {
         assert.fail(error);
     }
 }
+
+process.on('uncaughtException', function (exception) {
+    console.log(exception);
+});
 
 testGetDevices()
     .then(testReceiveMessage)

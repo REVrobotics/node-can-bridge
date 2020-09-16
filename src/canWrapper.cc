@@ -14,27 +14,12 @@
 #include "canWrapper.h"
 
 #define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
+#define STREAM_NOT_FOUND_ERROR "Stream session handle not found for the requested device"
 
-class DeviceNotFoundException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return DEVICE_NOT_FOUND_ERROR;
-  }
-} DeviceNotFound;
-
-class StreamNotFoundException: public std::exception
-{
-  virtual const char* what() const throw()
-  {
-    return "Stream session handle not found for the requested device";
-  }
-} StreamNotFound;
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
 std::map<std::string, uint32_t> streamSessionHandleMap;
-std::mutex mtx;
 
 void clearDeviceMap() {
     for (auto itr = CANDeviceMap.begin(); itr != CANDeviceMap.end(); ++itr) {
@@ -113,13 +98,11 @@ class GetDevicesWorker : public Napi::AsyncWorker {
 // Params: none
 // Returns:
 //   devices: Array<{descriptor:string, name:string, driverName:string}
-Napi::Value getDevices(const Napi::CallbackInfo& info) {
+void getDevices(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     Napi::Function cb = info[0].As<Napi::Function>();
     GetDevicesWorker* wk = new GetDevicesWorker(cb);
     wk->Queue();
-
-    return info.Env().Undefined();
 }
 
 class RegisterDeviceToHALWorker : public Napi::AsyncWorker {
@@ -146,14 +129,13 @@ class RegisterDeviceToHALWorker : public Napi::AsyncWorker {
         int32_t status = -1;
 };
 
-// TODO: verify params
 // Params:
 //   descriptor: Number
 //   messageId: Number
 //   messageMask: Number
 // Returns:
 //   status: Number
-Napi::Value registerDeviceToHAL(const Napi::CallbackInfo& info) {
+void registerDeviceToHAL(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     char* descriptor_chars = &descriptor[0];
@@ -164,7 +146,6 @@ Napi::Value registerDeviceToHAL(const Napi::CallbackInfo& info) {
 
     RegisterDeviceToHALWorker* wk = new RegisterDeviceToHALWorker(cb, descriptor_chars, messageId, messageMask);
     wk->Queue();
-    return info.Env().Undefined();
 }
 
 // Params:
@@ -191,7 +172,7 @@ void unregisterDeviceFromHAL(const Napi::CallbackInfo& info) {
 //   messageMask: Number
 // Returns:
 //   data: Object{data:Number[], messageID:number, timeStamp:number}
-void receiveMessage(const Napi::CallbackInfo& info) {
+Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
@@ -201,16 +182,11 @@ void receiveMessage(const Napi::CallbackInfo& info) {
     std::shared_ptr<rev::usb::CANMessage> message;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        cb.Call(env.Global(), {Napi::String::New(env, DEVICE_NOT_FOUND_ERROR)});
-        return;
-    }
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
 
     rev::usb::CANStatus status = deviceIterator->second->ReceiveCANMessage(message, messageId, messageMask);
-    if (status != rev::usb::CANStatus::kOk) {
-        cb.Call(env.Global(), {Napi::String::New(env, "Receiving message failed with status code " + std::to_string((int)status))});
-        return;
-    }
+    if (status != rev::usb::CANStatus::kOk)
+        Napi::Error::New(env, "Receiving message failed with status code " + std::to_string((int)status)).ThrowAsJavaScriptException();
 
     size_t messageSize = message->GetSize();
     const uint8_t* messageData = message->GetData();
@@ -223,7 +199,7 @@ void receiveMessage(const Napi::CallbackInfo& info) {
     messageInfo.Set("timeStamp", message->GetTimestampUs());
     messageInfo.Set("data", napiMessage);
 
-    cb.Call(env.Global(), {env.Null(), messageInfo});
+    return messageInfo;
 }
 
 // Params:
@@ -233,7 +209,7 @@ void receiveMessage(const Napi::CallbackInfo& info) {
 //   maxSize: Number
 // Returns:
 //   status: Number
-void openStreamSession(const Napi::CallbackInfo& info) {
+Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
@@ -247,112 +223,80 @@ void openStreamSession(const Napi::CallbackInfo& info) {
     uint32_t sessionHandle;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        cb.Call(env.Global(), {Napi::String::New(env, DEVICE_NOT_FOUND_ERROR)});
-        return;
-    }
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
 
     rev::usb::CANStatus status = deviceIterator->second->OpenStreamSession(&sessionHandle, filter, maxSize);
     if (status == rev::usb::CANStatus::kOk) addStreamSessionHandle(descriptor, sessionHandle);
-    cb.Call(env.Global(), {env.Null(), Napi::Number::New(env, (int)status)});
+    return Napi::Number::New(env, (int)status);
 }
-
-class ReadStreamSessionWorker : public Napi::AsyncWorker {
-    public:
-        ReadStreamSessionWorker(Napi::Function& callback, uint32_t messagesRead, HAL_CANStreamMessage* messages)
-        : AsyncWorker(callback), messagesRead(messagesRead), messages(messages) {}
-
-    void Execute() override {
-    }
-
-    void OnOK() override {
-        Napi::EscapableHandleScope scope(Env());
-        Napi::Array messageArray = Napi::Array::New(Env(), messagesRead);
-        for (uint32_t i = 0; i < messagesRead; i++) {
-            Napi::Object message = Napi::Object::New(Env());
-            message.Set("messageID", messages[i].messageID);
-            message.Set("timeStamp", messages[i].timeStamp);
-
-            size_t messageLength = std::min((int)messages[i].dataSize, 8);
-            Napi::Array data = Napi::Array::New(Env(), messageLength);
-            for (int m = 0; m < messageLength; m++) {
-                data[m] = Napi::Number::New(Env(), messages[i].data[m]);
-            }
-            message.Set("data", data);
-            messageArray[i] = message;
-        }
-        Callback().Call({Env().Null(), scope.Escape(messageArray)});
-    }
-
-    private:
-        uint32_t messagesRead;
-        HAL_CANStreamMessage* messages;
-};
 
 // Params:
 //   descriptor: String
 //   messagesToRead: Number
 // Returns:
 //   messages: Array<Object{messageID:Number, timeStamp:Number, data:Array<Number>}>
-Napi::Value readStreamSession(const Napi::CallbackInfo& info) {
+Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t messagesToRead = info[1].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[2].As<Napi::Function>();
 
-    // TODO: handle device / session not found
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) throw DeviceNotFound;
-    uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
-    if (sessionHandle == NULL) throw StreamNotFound;
-
     HAL_CANStreamMessage* messages;
     uint32_t messagesRead = 0;
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
+    if (sessionHandle == NULL) Napi::Error::New(env, STREAM_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+
     deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
-    ReadStreamSessionWorker* wk = new ReadStreamSessionWorker(cb, messagesRead, messages);
-    wk->Queue();
-    return info.Env().Undefined();
+
+    Napi::Array messageArray = Napi::Array::New(env, messagesRead);
+    for (uint32_t i = 0; i < messagesRead; i++) {
+        Napi::Object message = Napi::Object::New(env);
+        message.Set("messageID", messages[i].messageID);
+        message.Set("timeStamp", messages[i].timeStamp);
+
+        size_t messageLength = std::min((int)messages[i].dataSize, 8);
+        Napi::Array data = Napi::Array::New(env, messageLength);
+        for (int m = 0; m < messageLength; m++) {
+            data[m] = Napi::Number::New(env, messages[i].data[m]);
+        }
+        message.Set("data", data);
+        messageArray[i] = message;
+    }
+    return messageArray;
 }
 
 // Params:
 //   descriptor: String
 // Returns:
 //   status: Number
-void closeStreamSession(const Napi::CallbackInfo& info) {
+Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     Napi::Function cb = info[1].As<Napi::Function>();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        cb.Call(env.Global(), {Napi::String::New(env, DEVICE_NOT_FOUND_ERROR)});
-        return;
-    }
-
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
     uint32_t sessionHandle = getStreamHandleFromMap(descriptor);
-    if (sessionHandle == NULL) {
-        cb.Call(env.Global(), {Napi::String::New(env, "Stream not started")});
-        return;
-    }
+    if (sessionHandle == NULL) Napi::Error::New(env, STREAM_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
 
     rev::usb::CANStatus status = deviceIterator->second->CloseStreamSession(sessionHandle);
-    cb.Call(env.Global(), {env.Null(), Napi::Number::New(env, (int)status)});
+    return Napi::Number::New(env, (int)status);
 }
 
 // Params:
 //   descriptor: String
 // Returns:
 //   status: Object{percentBusUtilization:Number, busOff:Number, txFull:Number, receiveErr:Number, transmitError:Number}
-void getCANDetailStatus(const Napi::CallbackInfo& info) {
+Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     Napi::Function cb = info[1].As<Napi::Function>();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        cb.Call(env.Global(), {Napi::String::New(env, DEVICE_NOT_FOUND_ERROR)});
-        return;
-    }
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
 
     float percentBusUtilization;
     uint32_t busOff;
@@ -367,5 +311,5 @@ void getCANDetailStatus(const Napi::CallbackInfo& info) {
     status.Set("txFull", txFull);
     status.Set("receiveErr", receiveErr);
     status.Set("transmitErr", transmitErr);
-    cb.Call({env.Null(), status});
+    return status;
 }
