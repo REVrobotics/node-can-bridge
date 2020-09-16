@@ -7,7 +7,21 @@ export interface CanMessage {
     timeStamp: Number;
 }
 
-export const getDevices: () => Promise<any> = promisify(addon.getDevices);
+export interface CanDeviceInfo {
+    descriptor: string;
+    name: string;
+    driverName: string;
+}
+
+export interface CanDeviceStatus {
+    busOff:Number;
+    txFull:Number;
+    receiveErr:Number;
+    transmitErr:Number;
+    percentBusUtilization:Number;
+}
+
+export const getDevices: () => Promise<CanDeviceInfo[]> = promisify(addon.getDevices);
 export const registerDeviceToHAL:
     (descriptor:string, messageId:Number, messageMask:number) => Promise<Number> = promisify(addon.registerDeviceToHAL);
 export const unregisterDeviceFromHAL: (descriptor:string) => Promise<Number> = promisify(addon.unregisterDeviceFromHAL);
@@ -17,4 +31,4 @@ export const openStreamSession: (descriptor:string, messageId:Number, messageMas
 export const readStreamSession: (descriptor:string, messagesToRead:number) =>
     CanMessage[] = addon.readStreamSession;
 export const closeStreamSession: (descriptor:string) => Number = addon.closeStreamSession;
-export const getCANDetailStatus: (descriptor:string) => Object = addon.getCANDetailStatus;
+export const getCANDetailStatus: (descriptor:string) => CanDeviceStatus = addon.getCANDetailStatus;
