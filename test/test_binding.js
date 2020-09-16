@@ -115,6 +115,7 @@ testGetDevices()
     .then(testReceiveMessage)
     .then(testOpenStreamSession)
     .then(testReadStreamSession)
+    .then(testReadStreamSession)
     .then(testCloseStreamSession)
     .then(testGetCANDetailStatus)
     .catch((error)  => {

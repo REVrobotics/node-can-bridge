@@ -11,6 +11,7 @@
 #include <thread>
 #include <chrono>
 #include <map>
+#include <vector>
 #include "canWrapper.h"
 
 #define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
@@ -21,14 +22,20 @@ rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
 std::map<std::string, uint32_t> streamSessionHandleMap;
 
-void clearDeviceMap() {
+void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
     for (auto itr = CANDeviceMap.begin(); itr != CANDeviceMap.end(); ++itr) {
-        delete &itr->second;
+        bool inDevices = false;
+        for(auto descriptor = descriptors.begin(); descriptor != descriptors.end(); ++descriptor) {
+            if (*descriptor == itr->first){
+                inDevices = true;
+                break;
+            }
+        }
+        if (!inDevices) {
+            CANDeviceMap.erase(itr->first);
+            streamSessionHandleMap.erase(itr->first);
+        }
     }
-    CANDeviceMap.clear();
-
-    // TODO: we probably don't want to have to restart stream sessions every time we check for devices
-    streamSessionHandleMap.clear();
 }
 
 void addDeviceToMap(std::string descriptor) {
@@ -69,9 +76,9 @@ class GetDevicesWorker : public Napi::AsyncWorker {
     void OnOK() override {
         Napi::HandleScope scope(Env());
 
-        clearDeviceMap();
         int numDevices = CANBridge_NumDevices(CANHandle);
         devices = Napi::Array::New(Env(), numDevices);
+        std::vector<std::string> descriptors;
         for (int i = 0; i < numDevices; i++) {
             std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
             std::string name = CANBridge_GetDeviceName(CANHandle, i);
@@ -81,10 +88,13 @@ class GetDevicesWorker : public Napi::AsyncWorker {
             deviceInfo.Set("descriptor", descriptor);
             deviceInfo.Set("name", name);
             deviceInfo.Set("driverName", driverName);
-
             devices[i] = deviceInfo;
-            addDeviceToMap(descriptor);
+
+            if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) addDeviceToMap(descriptor);
+            descriptors.push_back(descriptor);
         }
+
+        removeExtraDevicesFromDeviceMap(descriptors);
 
         CANBridge_FreeScan(CANHandle);
         Callback().Call({Env().Null(), devices});
