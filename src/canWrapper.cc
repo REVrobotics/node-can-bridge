@@ -190,7 +190,7 @@ void unregisterDeviceFromHAL(const Napi::CallbackInfo& info) {
 //   messageId: Number
 //   messageMask: Number
 // Returns:
-//   data: Array
+//   data: Object{data:Number[], messageID:number, timeStamp:number}
 void receiveMessage(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
@@ -218,8 +218,12 @@ void receiveMessage(const Napi::CallbackInfo& info) {
     for (int i = 0; i < messageSize; i++) {
         napiMessage[i] =  messageData[i];
     }
+    Napi::Object messageInfo = Napi::Object::New(env);
+    messageInfo.Set("messageID", message->GetMessageId());
+    messageInfo.Set("timeStamp", message->GetTimestampUs());
+    messageInfo.Set("data", napiMessage);
 
-    cb.Call(env.Global(), {env.Null(), napiMessage});
+    cb.Call(env.Global(), {env.Null(), messageInfo});
 }
 
 // Params:
@@ -258,10 +262,11 @@ class ReadStreamSessionWorker : public Napi::AsyncWorker {
         ReadStreamSessionWorker(Napi::Function& callback, uint32_t messagesRead, HAL_CANStreamMessage* messages)
         : AsyncWorker(callback), messagesRead(messagesRead), messages(messages) {}
 
-    void Execute() override {}
+    void Execute() override {
+    }
 
     void OnOK() override {
-        Napi::HandleScope scope(Env());
+        Napi::EscapableHandleScope scope(Env());
         Napi::Array messageArray = Napi::Array::New(Env(), messagesRead);
         for (uint32_t i = 0; i < messagesRead; i++) {
             Napi::Object message = Napi::Object::New(Env());
@@ -276,7 +281,7 @@ class ReadStreamSessionWorker : public Napi::AsyncWorker {
             message.Set("data", data);
             messageArray[i] = message;
         }
-        Callback().Call({Env().Null(), messageArray});
+        Callback().Call({Env().Null(), scope.Escape(messageArray)});
     }
 
     private:
@@ -304,7 +309,6 @@ Napi::Value readStreamSession(const Napi::CallbackInfo& info) {
     HAL_CANStreamMessage* messages;
     uint32_t messagesRead = 0;
     deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
-
     ReadStreamSessionWorker* wk = new ReadStreamSessionWorker(cb, messagesRead, messages);
     wk->Queue();
     return info.Env().Undefined();

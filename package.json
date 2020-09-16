@@ -1,6 +1,6 @@
 {
     "name": "node-can-bridge",
-    "version": "0.0.4",
+    "version": "0.0.5",
     "author": "REV Robotics",
     "description": "Get CAN Data",
     "license": "MIT",

@@ -29,8 +29,8 @@
             'RuntimeLibrary': 0
         },
       },
-      "cflags_cc!": ["-std=c++17"],
-      "cflags!": ["-std=c++17"],
+      "cflags_cc!": ["-std=c++17", '-fno-exceptions'],
+      "cflags!": ["-std=c++17", '-fno-exceptions'],
     }
   ]
 }

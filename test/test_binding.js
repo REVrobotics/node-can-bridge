@@ -56,7 +56,6 @@ async function testReceiveMessage() {
         if (devices.length ===  0) return;
         await new Promise(resolve=>{setTimeout(resolve, 200)});
         const message = await addon.receiveMessage(devices[0].descriptor, 0, 0);
-        assert.equal(message.length, 8, "Message does not have correct length");
         console.log("Got message", message);
     } catch(error) {
         assert.fail(error);
