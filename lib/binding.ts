@@ -25,7 +25,7 @@ export const getDevices: () => CanDeviceInfo[] = addon.getDevices;
 export const registerDeviceToHAL:
     (descriptor:string, messageId:Number, messageMask:number) => Promise<Number> = promisify(addon.registerDeviceToHAL);
 export const unregisterDeviceFromHAL: (descriptor:string) => Promise<Number> = promisify(addon.unregisterDeviceFromHAL);
-export const receiveMessage: () => CanMessage = addon.receiveMessage;
+export const receiveMessage: (descriptor:string, messageId:Number, messageMask:number) => CanMessage = addon.receiveMessage;
 export const openStreamSession: (descriptor:string, messageId:Number, messageMask:number, maxSize:number) =>
     Number = addon.openStreamSession;
 export const readStreamSession: (descriptor:string, sessionHandle:Number, messagesToRead:number) =>
