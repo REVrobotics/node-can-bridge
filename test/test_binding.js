@@ -7,7 +7,7 @@ let devices = [];
 async function testGetDevices() {
     assert(addon.getDevices, "getDevices is undefined");
     try {
-        devices = await addon.getDevices();
+        devices = addon.getDevices();
         console.log(`Found ${devices.length} device(s)`);
         devices.forEach((device) => {
             console.log(device);
@@ -66,30 +66,30 @@ async function testOpenStreamSession() {
     assert(addon.openStreamSession, "openStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
-        assert.equal(status, 0, "Opening stream failed");
+        return addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
     } catch(error) {
         assert.fail(error);
     }
 }
 
-async function testReadStreamSession() {
+async function testReadStreamSession(sessionHandle) {
     assert(addon.readStreamSession, "readStreamSession is undefined");
     if (devices.length === 0) return;
     try {
         await new Promise(resolve => {setTimeout(resolve, 200)});
-        const data = addon.readStreamSession(devices[0].descriptor, 4);
+        const data = addon.readStreamSession(devices[0].descriptor, sessionHandle, 4);
         console.log("Got stream:", data);
+        return sessionHandle;
     } catch (error) {
         console.log(error);
     }
 }
 
-async function testCloseStreamSession() {
+async function testCloseStreamSession(sessionHandle) {
     assert(addon.closeStreamSession, "closeStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = addon.closeStreamSession(devices[0].descriptor);
+        const status = addon.closeStreamSession(devices[0].descriptor, sessionHandle);
         assert.equal(status, 0, "Closing stream failed");
     } catch(error) {
         assert.fail(error);
@@ -117,6 +117,7 @@ testGetDevices()
     .then(testReadStreamSession)
     .then(testCloseStreamSession)
     .then(testGetCANDetailStatus)
+    .then(() => new Promise(resolve => {setTimeout(resolve, 20000)}))
     .catch((error)  => {
         console.log(error);
     });

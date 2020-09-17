@@ -21,7 +21,7 @@ export interface CanDeviceStatus {
     percentBusUtilization:Number;
 }
 
-export const getDevices: () => Promise<CanDeviceInfo[]> = promisify(addon.getDevices);
+export const getDevices: () => CanDeviceInfo[] = addon.getDevices;
 export const registerDeviceToHAL:
     (descriptor:string, messageId:Number, messageMask:number) => Promise<Number> = promisify(addon.registerDeviceToHAL);
 export const unregisterDeviceFromHAL: (descriptor:string) => Promise<Number> = promisify(addon.unregisterDeviceFromHAL);

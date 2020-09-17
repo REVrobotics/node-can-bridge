@@ -15,7 +15,7 @@ export interface CanDeviceStatus {
     transmitErr: Number;
     percentBusUtilization: Number;
 }
-export declare const getDevices: () => Promise<CanDeviceInfo[]>;
+export declare const getDevices: () => CanDeviceInfo[];
 export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => Promise<Number>;
 export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<Number>;
 export declare const receiveMessage: () => CanMessage;
