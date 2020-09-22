@@ -107,6 +107,18 @@ async function testGetCANDetailStatus() {
     }
 }
 
+async function testSendCANMessage() {
+    assert(addon.sendCANMessage, "sendCANMessage is undefined");
+    try {
+        if (devices.length ===  0) return;
+        // Send identify to SparkMax #1
+        const status = addon.sendCANMessage(devices[0].descriptor, 0x2051D81, [], 0);
+        console.log("CAN Status:", status);
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 process.on('uncaughtException', function (exception) {
     console.log(exception);
 });
@@ -117,7 +129,7 @@ testGetDevices()
     .then(testReadStreamSession)
     .then(testCloseStreamSession)
     .then(testGetCANDetailStatus)
-    .then(() => new Promise(resolve => {setTimeout(resolve, 20000)}))
+    .then(testSendCANMessage)
     .catch((error)  => {
         console.log(error);
     });

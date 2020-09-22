@@ -18,6 +18,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, closeStreamSession));
     exports.Set(Napi::String::New(env, "getCANDetailStatus"),
                 Napi::Function::New(env, getCANDetailStatus));
+    exports.Set(Napi::String::New(env, "sendCANMessage"),
+                Napi::Function::New(env, sendCANMessage));
     return exports;
 }
 

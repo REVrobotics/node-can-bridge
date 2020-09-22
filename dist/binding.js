@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
+exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
 var util_1 = require("util");
 var addon = require('bindings')('addon');
 exports.getDevices = addon.getDevices;
@@ -11,3 +11,4 @@ exports.openStreamSession = addon.openStreamSession;
 exports.readStreamSession = addon.readStreamSession;
 exports.closeStreamSession = addon.closeStreamSession;
 exports.getCANDetailStatus = addon.getCANDetailStatus;
+exports.sendCANMessage = addon.sendCANMessage;

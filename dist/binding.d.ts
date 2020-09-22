@@ -1,7 +1,7 @@
 export interface CanMessage {
-    data: Number[];
-    messageID: Number;
-    timeStamp: Number;
+    data: number[];
+    messageID: number;
+    timeStamp: number;
 }
 export interface CanDeviceInfo {
     descriptor: string;
@@ -9,17 +9,18 @@ export interface CanDeviceInfo {
     driverName: string;
 }
 export interface CanDeviceStatus {
-    busOff: Number;
-    txFull: Number;
-    receiveErr: Number;
-    transmitErr: Number;
-    percentBusUtilization: Number;
+    busOff: number;
+    txFull: number;
+    receiveErr: number;
+    transmitErr: number;
+    percentBusUtilization: number;
 }
 export declare const getDevices: () => CanDeviceInfo[];
-export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => Promise<Number>;
-export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<Number>;
-export declare const receiveMessage: () => CanMessage;
-export declare const openStreamSession: (descriptor: string, messageId: Number, messageMask: number, maxSize: number) => Number;
-export declare const readStreamSession: (descriptor: string, sessionHandle: Number, messagesToRead: number) => CanMessage[];
-export declare const closeStreamSession: (descriptor: string, sessionHandle: Number) => Number;
+export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => Promise<number>;
+export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<number>;
+export declare const receiveMessage: (descriptor: string, messageId: number, messageMask: number) => CanMessage;
+export declare const openStreamSession: (descriptor: string, messageId: number, messageMask: number, maxSize: number) => number;
+export declare const readStreamSession: (descriptor: string, sessionHandle: number, messagesToRead: number) => CanMessage[];
+export declare const closeStreamSession: (descriptor: string, sessionHandle: number) => number;
 export declare const getCANDetailStatus: (descriptor: string) => CanDeviceStatus;
+export declare const sendCANMessage: (descriptor: string, messageId: number, messageData: number[], repeatPeriod: number) => number;

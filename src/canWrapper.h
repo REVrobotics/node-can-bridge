@@ -10,5 +10,6 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info);
 Napi::Array readStreamSession(const Napi::CallbackInfo& info);
 Napi::Number closeStreamSession(const Napi::CallbackInfo& info);
 Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info);
+Napi::Number sendCANMessage(const Napi::CallbackInfo& info);
 
 #endif

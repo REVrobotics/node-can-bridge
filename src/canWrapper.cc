@@ -325,3 +325,30 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     status.Set("transmitErr", transmitErr);
     return status;
 }
+
+// Params:
+//   descriptor: string
+//   messageId: Number
+//   messageData: Number[]
+//   repeatPeriod: Number
+// Returns:
+//   status: Number
+Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
+    Napi::Array dataParam = info[2].As<Napi::Array>();
+    int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+
+    uint8_t messageData[8];
+    for (int i = 0; i < dataParam.Length(); i++) {
+        messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+    }
+
+    rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataParam.Length());
+    rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
+    return Napi::Number::New(env, (int)status);
+}

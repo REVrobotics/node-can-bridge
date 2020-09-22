@@ -2,9 +2,9 @@ import {promisify} from "util";
 const addon = require('bindings')('addon');
 
 export interface CanMessage {
-    data: Number[];
-    messageID: Number;
-    timeStamp: Number;
+    data: number[];
+    messageID: number;
+    timeStamp: number;
 }
 
 export interface CanDeviceInfo {
@@ -14,21 +14,22 @@ export interface CanDeviceInfo {
 }
 
 export interface CanDeviceStatus {
-    busOff:Number;
-    txFull:Number;
-    receiveErr:Number;
-    transmitErr:Number;
-    percentBusUtilization:Number;
+    busOff: number;
+    txFull: number;
+    receiveErr: number;
+    transmitErr: number;
+    percentBusUtilization: number;
 }
 
 export const getDevices: () => CanDeviceInfo[] = addon.getDevices;
 export const registerDeviceToHAL:
-    (descriptor:string, messageId:Number, messageMask:number) => Promise<Number> = promisify(addon.registerDeviceToHAL);
-export const unregisterDeviceFromHAL: (descriptor:string) => Promise<Number> = promisify(addon.unregisterDeviceFromHAL);
-export const receiveMessage: (descriptor:string, messageId:Number, messageMask:number) => CanMessage = addon.receiveMessage;
-export const openStreamSession: (descriptor:string, messageId:Number, messageMask:number, maxSize:number) =>
-    Number = addon.openStreamSession;
-export const readStreamSession: (descriptor:string, sessionHandle:Number, messagesToRead:number) =>
+    (descriptor:string, messageId:Number, messageMask:number) => Promise<number> = promisify(addon.registerDeviceToHAL);
+export const unregisterDeviceFromHAL: (descriptor:string) => Promise<number> = promisify(addon.unregisterDeviceFromHAL);
+export const receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage = addon.receiveMessage;
+export const openStreamSession: (descriptor:string, messageId:number, messageMask:number, maxSize:number) =>
+    number = addon.openStreamSession;
+export const readStreamSession: (descriptor:string, sessionHandle:number, messagesToRead:number) =>
     CanMessage[] = addon.readStreamSession;
-export const closeStreamSession: (descriptor:string, sessionHandle:Number) => Number = addon.closeStreamSession;
+export const closeStreamSession: (descriptor:string, sessionHandle:number) => number = addon.closeStreamSession;
 export const getCANDetailStatus: (descriptor:string) => CanDeviceStatus = addon.getCANDetailStatus;
+export const sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendCANMessage;
