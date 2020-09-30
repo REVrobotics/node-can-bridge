@@ -66,7 +66,9 @@ async function testOpenStreamSession() {
     assert(addon.openStreamSession, "openStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        return addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
+        const sessionHandle = addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
+        console.log("Started stream session with handle", sessionHandle);
+        return sessionHandle;
     } catch(error) {
         assert.fail(error);
     }

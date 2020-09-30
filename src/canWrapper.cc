@@ -34,56 +34,19 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
     }
 }
 
-void addDeviceToMap(std::string descriptor) {
+bool addDeviceToMap(std::string descriptor) {
     char* descriptor_chars = &descriptor[0];
-    std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
-    if (canDevice != nullptr) {
-        CANDeviceMap[descriptor] = std::move(canDevice);
-     }
-}
-
-class GetDevicesWorker : public Napi::AsyncWorker {
-    public:
-        GetDevicesWorker(Napi::Function& callback)
-        : AsyncWorker(callback) {}
-
-        ~GetDevicesWorker() { }
-
-    void Execute() override {
-
-    }
-
-    void OnOK() override {
-        Napi::HandleScope scope(Env());
-
-        int numDevices = CANBridge_NumDevices(CANHandle);
-        devices = Napi::Array::New(Env(), numDevices);
-        std::vector<std::string> descriptors;
-        for (int i = 0; i < numDevices; i++) {
-            std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
-            std::string name = CANBridge_GetDeviceName(CANHandle, i);
-            std::string driverName = CANBridge_GetDriverName(CANHandle, i);
-
-            Napi::Object deviceInfo = Napi::Object::New(Env());
-            deviceInfo.Set("descriptor", descriptor);
-            deviceInfo.Set("name", name);
-            deviceInfo.Set("driverName", driverName);
-            devices[i] = deviceInfo;
-
-            if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) addDeviceToMap(descriptor);
-            descriptors.push_back(descriptor);
+    try {
+        std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
+        if (canDevice != nullptr) {
+            CANDeviceMap[descriptor] = std::move(canDevice);
+            return true;
         }
-
-        removeExtraDevicesFromDeviceMap(descriptors);
-
-        CANBridge_FreeScan(CANHandle);
-        Callback().Call({Env().Null(), devices});
+        return false;
+    } catch (...) {
+        return false;
     }
-
-    private:
-        c_CANBridge_ScanHandle CANHandle;
-        Napi::Array devices;
-};
+}
 
 // Params: none
 // Returns:
@@ -93,7 +56,7 @@ Napi::Array getDevices(const Napi::CallbackInfo& info) {
     c_CANBridge_ScanHandle CANHandle = CANBridge_Scan();
 
     int numDevices = CANBridge_NumDevices(CANHandle);
-    Napi::Array devices = Napi::Array::New(env, numDevices);
+    Napi::Array devices = Napi::Array::New(env);
     std::vector<std::string> descriptors;
     for (int i = 0; i < numDevices; i++) {
         std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
@@ -104,14 +67,23 @@ Napi::Array getDevices(const Napi::CallbackInfo& info) {
         deviceInfo.Set("descriptor", descriptor);
         deviceInfo.Set("name", name);
         deviceInfo.Set("driverName", driverName);
-        devices[i] = deviceInfo;
 
-        if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) addDeviceToMap(descriptor);
-        descriptors.push_back(descriptor);
+        if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
+            if (addDeviceToMap(descriptor)) {
+                descriptors.push_back(descriptor);
+                deviceInfo.Set("available", true);
+            } else {
+                deviceInfo.Set("available", false);
+            }
+        } else {
+            descriptors.push_back(descriptor);
+            deviceInfo.Set("available", true);
+        }
+
+        devices[i] = deviceInfo;
     }
 
     removeExtraDevicesFromDeviceMap(descriptors);
-
     CANBridge_FreeScan(CANHandle);
     return devices;
 }
@@ -193,11 +165,16 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
     std::shared_ptr<rev::usb::CANMessage> message;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Object::New(env);
+    }
 
     rev::usb::CANStatus status = deviceIterator->second->ReceiveCANMessage(message, messageId, messageMask);
-    if (status != rev::usb::CANStatus::kOk)
+    if (status != rev::usb::CANStatus::kOk) {
         Napi::Error::New(env, "Receiving message failed with status code " + std::to_string((int)status)).ThrowAsJavaScriptException();
+        return Napi::Object::New(env);
+    }
 
     size_t messageSize = message->GetSize();
     const uint8_t* messageData = message->GetData();
@@ -234,12 +211,22 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
     uint32_t sessionHandle;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Number::New(env, 0);
+    }
 
-    rev::usb::CANStatus status = deviceIterator->second->OpenStreamSession(&sessionHandle, filter, maxSize);
-    if (status != rev::usb::CANStatus::kOk)
-        Napi::Error::New(env, "Opening stream session failed with error code "+(int)status).ThrowAsJavaScriptException();
-    return Napi::Number::New(env, sessionHandle);
+    try {
+        rev::usb::CANStatus status = deviceIterator->second->OpenStreamSession(&sessionHandle, filter, maxSize);
+        if (status != rev::usb::CANStatus::kOk) {
+            Napi::Error::New(env, "Opening stream session failed with error code "+(int)status).ThrowAsJavaScriptException();
+        } else {
+            return Napi::Number::New(env, sessionHandle);
+        }
+    } catch(...) {
+        Napi::Error::New(env, "Opening stream session failed").ThrowAsJavaScriptException();
+    }
+    return Napi::Number::New(env, 0);
 }
 
 // Params:
@@ -254,30 +241,38 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
     uint32_t sessionHandle = info[1].As<Napi::Number>().Uint32Value();
     uint32_t messagesToRead = info[2].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[3].As<Napi::Function>();
-
     HAL_CANStreamMessage* messages;
     uint32_t messagesRead = 0;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-
-    deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
-
-    Napi::Array messageArray = Napi::Array::New(env, messagesRead);
-    for (uint32_t i = 0; i < messagesRead; i++) {
-        Napi::Object message = Napi::Object::New(env);
-        message.Set("messageID", messages[i].messageID);
-        message.Set("timeStamp", messages[i].timeStamp);
-
-        size_t messageLength = std::min((int)messages[i].dataSize, 8);
-        Napi::Array data = Napi::Array::New(env, messageLength);
-        for (int m = 0; m < messageLength; m++) {
-            data[m] = Napi::Number::New(env, messages[i].data[m]);
-        }
-        message.Set("data", data);
-        messageArray[i] = message;
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Array::New(env);
     }
-    return messageArray;
+
+    try {
+        deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
+        Napi::HandleScope scope(env);
+        Napi::Array messageArray = Napi::Array::New(env, (int)messagesRead);
+        for (uint32_t i = 0; i < messagesRead; i++) {
+            Napi::HandleScope scope(env);
+            Napi::Object message = Napi::Object::New(env);
+            message.Set("messageID", messages[i].messageID);
+            message.Set("timeStamp", messages[i].timeStamp);
+
+            int messageLength = std::min((int)messages[i].dataSize, 8);
+            Napi::Array data = Napi::Array::New(env);
+            for (int m = 0; m < messageLength; m++) {
+                data[m] = Napi::Number::New(env, messages[i].data[m]);
+            }
+            message.Set("data", data);
+            messageArray[i] = message;
+        }
+        return messageArray;
+    } catch(...) {
+        Napi::Error::New(env, "Reading stream session failed").ThrowAsJavaScriptException();
+        return Napi::Array::New(env);
+    }
 }
 
 // Params:
@@ -292,7 +287,10 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     Napi::Function cb = info[1].As<Napi::Function>();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Number::New(env, 0);
+    }
 
     rev::usb::CANStatus status = deviceIterator->second->CloseStreamSession(sessionHandle);
     return Napi::Number::New(env, (int)status);
@@ -308,7 +306,10 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     Napi::Function cb = info[1].As<Napi::Function>();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Object::New(env);
+    }
 
     float percentBusUtilization;
     uint32_t busOff;
@@ -341,11 +342,15 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    if (deviceIterator == CANDeviceMap.end()) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        return Napi::Number::New(env, 0);
+    }
 
     uint8_t messageData[8];
     for (int i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+        return Napi::Number::New(env, 0);
     }
 
     rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataParam.Length());
