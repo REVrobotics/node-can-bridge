@@ -263,6 +263,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
             int messageLength = std::min((int)messages[i].dataSize, 8);
             Napi::Array data = Napi::Array::New(env);
             for (int m = 0; m < messageLength; m++) {
+                Napi::HandleScope scope(env);
                 data[m] = Napi::Number::New(env, messages[i].data[m]);
             }
             message.Set("data", data);
@@ -350,7 +351,6 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     uint8_t messageData[8];
     for (int i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
-        return Napi::Number::New(env, 0);
     }
 
     rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataParam.Length());
