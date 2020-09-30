@@ -11,6 +11,7 @@ export interface CanDeviceInfo {
     descriptor: string;
     name: string;
     driverName: string;
+    available: boolean;
 }
 
 export interface CanDeviceStatus {
