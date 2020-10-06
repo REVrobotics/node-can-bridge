@@ -241,7 +241,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
     uint32_t sessionHandle = info[1].As<Napi::Number>().Uint32Value();
     uint32_t messagesToRead = info[2].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[3].As<Napi::Function>();
-    HAL_CANStreamMessage* messages;
+    HAL_CANStreamMessage *messages = new HAL_CANStreamMessage[messagesToRead];
     uint32_t messagesRead = 0;
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
@@ -253,7 +253,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
     try {
         deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
         Napi::HandleScope scope(env);
-        Napi::Array messageArray = Napi::Array::New(env, (int)messagesRead);
+        Napi::Array messageArray = Napi::Array::New(env);
         for (uint32_t i = 0; i < messagesRead; i++) {
             Napi::HandleScope scope(env);
             Napi::Object message = Napi::Object::New(env);
@@ -261,7 +261,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
             message.Set("timeStamp", messages[i].timeStamp);
 
             int messageLength = std::min((int)messages[i].dataSize, 8);
-            Napi::Array data = Napi::Array::New(env);
+            Napi::Array data = Napi::Array::New(env, messageLength);
             for (int m = 0; m < messageLength; m++) {
                 Napi::HandleScope scope(env);
                 data[m] = Napi::Number::New(env, messages[i].data[m]);
@@ -269,8 +269,10 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
             message.Set("data", data);
             messageArray[i] = message;
         }
+        delete[] messages;
         return messageArray;
     } catch(...) {
+        delete[] messages;
         Napi::Error::New(env, "Reading stream session failed").ThrowAsJavaScriptException();
         return Napi::Array::New(env);
     }
@@ -286,6 +288,7 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t sessionHandle = info[1].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[1].As<Napi::Function>();
+    std::cout << "Closing";
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) {
