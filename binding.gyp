@@ -18,9 +18,7 @@
       'libraries': [
             '<(module_root_dir)/CANBridge/x86-64/CANBridge.lib',
             '<(module_root_dir)/CANBridge/x86-64/wpiutil.lib',
-            '<(module_root_dir)/CANBridge/x86-64/wpiutiljni.lib',
             '<(module_root_dir)/CANBridge/x86-64/wpiHal.lib',
-            '<(module_root_dir)/CANBridge/x86-64/wpiHaljni.lib',
       ],
       'msvs_settings': {
         'VCCLCompilerTool': {
