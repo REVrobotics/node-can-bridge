@@ -17,7 +17,7 @@ export interface CanDeviceStatus {
     percentBusUtilization: number;
 }
 export declare const getDevices: () => CanDeviceInfo[];
-export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => Promise<number>;
+export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => number;
 export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<number>;
 export declare const receiveMessage: (descriptor: string, messageId: number, messageMask: number) => CanMessage;
 export declare const openStreamSession: (descriptor: string, messageId: number, messageMask: number, maxSize: number) => number;
@@ -25,4 +25,7 @@ export declare const readStreamSession: (descriptor: string, sessionHandle: numb
 export declare const closeStreamSession: (descriptor: string, sessionHandle: number) => number;
 export declare const getCANDetailStatus: (descriptor: string) => CanDeviceStatus;
 export declare const sendCANMessage: (descriptor: string, messageId: number, messageData: number[], repeatPeriod: number) => number;
-export declare const waitForNotifierAlarm: (time: number) => void;
+export declare const sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number;
+export declare const intializeNotifier: () => void;
+export declare const waitForNotifierAlarm: (time: number) => Promise<number>;
+export declare const stopNotifier: () => void;

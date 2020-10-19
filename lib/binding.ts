@@ -24,7 +24,7 @@ export interface CanDeviceStatus {
 
 export const getDevices: () => CanDeviceInfo[] = addon.getDevices;
 export const registerDeviceToHAL:
-    (descriptor:string, messageId:Number, messageMask:number) => Promise<number> = promisify(addon.registerDeviceToHAL);
+    (descriptor:string, messageId:Number, messageMask:number) => number = addon.registerDeviceToHAL;
 export const unregisterDeviceFromHAL: (descriptor:string) => Promise<number> = promisify(addon.unregisterDeviceFromHAL);
 export const receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage = addon.receiveMessage;
 export const openStreamSession: (descriptor:string, messageId:number, messageMask:number, maxSize:number) =>
@@ -34,4 +34,7 @@ export const readStreamSession: (descriptor:string, sessionHandle:number, messag
 export const closeStreamSession: (descriptor:string, sessionHandle:number) => number = addon.closeStreamSession;
 export const getCANDetailStatus: (descriptor:string) => CanDeviceStatus = addon.getCANDetailStatus;
 export const sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendCANMessage;
-export const waitForNotifierAlarm: (time:number) => void = addon.waitForNotifierAlarm;
+export const sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendHALMessage;
+export const intializeNotifier: () => void = addon.intializeNotifier;
+export const waitForNotifierAlarm: (time:number) => Promise<number> = promisify(addon.waitForNotifierAlarm);
+export const stopNotifier: () => void = addon.stopNotifier;

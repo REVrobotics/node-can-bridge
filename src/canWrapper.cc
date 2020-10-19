@@ -18,6 +18,8 @@
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
+bool halInitialized = false;
+uint32_t m_notifier;
 
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
     for (auto itr = CANDeviceMap.begin(); itr != CANDeviceMap.end(); ++itr) {
@@ -88,29 +90,6 @@ Napi::Array getDevices(const Napi::CallbackInfo& info) {
     return devices;
 }
 
-class RegisterDeviceToHALWorker : public Napi::AsyncWorker {
-    public:
-        RegisterDeviceToHALWorker(Napi::Function& callback, char* descriptor, uint32_t messageId, uint32_t messageMask)
-        : AsyncWorker(callback), descriptor(descriptor), messageId(messageId), messageMask(messageMask) {}
-
-        ~RegisterDeviceToHALWorker() {}
-
-    void Execute() override {
-        HAL_Initialize(500, 0);
-        CANBridge_RegisterDeviceToHAL(descriptor, messageId, messageMask, &status);
-    }
-
-    void OnOK() override {
-        Napi::HandleScope scope(Env());
-        Callback().Call({Env().Null(), Napi::Number::New(Env(), status)});
-    }
-
-    private:
-        char* descriptor;
-        uint32_t messageId;
-        uint32_t messageMask;
-        int32_t status = -1;
-};
 
 // Params:
 //   descriptor: Number
@@ -118,7 +97,7 @@ class RegisterDeviceToHALWorker : public Napi::AsyncWorker {
 //   messageMask: Number
 // Returns:
 //   status: Number
-void registerDeviceToHAL(const Napi::CallbackInfo& info) {
+Napi::Number registerDeviceToHAL(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     char* descriptor_chars = &descriptor[0];
@@ -127,8 +106,19 @@ void registerDeviceToHAL(const Napi::CallbackInfo& info) {
     uint32_t messageMask = info[2].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[3].As<Napi::Function>();
 
-    RegisterDeviceToHALWorker* wk = new RegisterDeviceToHALWorker(cb, descriptor_chars, messageId, messageMask);
-    wk->Queue();
+    if (!halInitialized) {
+        HAL_Initialize(500, 0);
+        halInitialized = true;
+    }
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator != CANDeviceMap.end()) {
+        CANDeviceMap.erase(deviceIterator->first);
+    }
+
+    int32_t status;
+    CANBridge_RegisterDeviceToHAL(descriptor_chars, messageId, messageMask, &status);
+    return Napi::Number::New(env, status);
 }
 
 // Params:
@@ -361,13 +351,45 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     return Napi::Number::New(env, (int)status);
 }
 
+// Params:
+//   messageId: Number
+//   messageData: Number[]
+//   repeatPeriod: Number
+// Returns:
+//   status: Number
+Napi::Number sendHALMessage(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    uint32_t messageId = info[0].As<Napi::Number>().Uint32Value();
+    Napi::Array dataParam = info[1].As<Napi::Array>();
+    int repeatPeriodMs = info[2].As<Napi::Number>().Uint32Value();
+
+    uint8_t messageData[8];
+    for (int i = 0; i < dataParam.Length(); i++) {
+        messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+    }
+
+    int32_t status;
+    HAL_CAN_SendMessage(messageId, messageData, dataParam.Length(), repeatPeriodMs, &status);
+    return Napi::Number::New(env, (int)status);
+}
+
+void intializeNotifier(const Napi::CallbackInfo& info) {
+    int32_t status;
+    m_notifier = HAL_InitializeNotifier(&status);
+}
+
 void waitForNotifierAlarm(const Napi::CallbackInfo& info) {
     uint32_t time = info[0].As<Napi::Number>().Uint32Value();
+    Napi::Function cb = info[1].As<Napi::Function>();
     int32_t status;
 
-    uint32_t m_notifier = HAL_InitializeNotifier(&status);
     HAL_UpdateNotifierAlarm(m_notifier, HAL_GetFPGATime(&status) + time, &status);
     HAL_WaitForNotifierAlarm(m_notifier, &status);
+    cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
+}
+
+void stopNotifier(const Napi::CallbackInfo& info) {
+    int32_t status;
     HAL_StopNotifier(m_notifier, &status);
     HAL_CleanNotifier(m_notifier, &status);
 }

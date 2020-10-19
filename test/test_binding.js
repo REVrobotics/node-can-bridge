@@ -25,7 +25,7 @@ async function testRegisterDeviceToHAL() {
     try {
         if (devices.length > 0) {
             console.log(`Registering device ${devices[0].descriptor} to HAL`);
-            const status = await addon.registerDeviceToHAL(devices[0].descriptor, 0, 0);
+            const status = addon.registerDeviceToHAL(devices[0].descriptor, 0, 0);
             console.log(`Device registered with status code ${status}`);
             assert.equal(status, 0, "Registering device failed");
         }
@@ -121,6 +121,26 @@ async function testSendCANMessage() {
     }
 }
 
+async function testSendHALMessage() {
+    assert(addon.sendCANMessage, "sendCANMessage is undefined");
+    try {
+        if (devices.length ===  0) return;
+        // Send identify to SparkMax #1
+        const status = addon.sendHALMessage(0x2051D81, [], 0);
+        console.log("Status:", status);
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
+function testInitializeNotifier() {
+    try {
+        addon.intializeNotifier();
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 async function testWaitForNotifierAlarm() {
     try {
         const start = Date.now();
@@ -131,10 +151,17 @@ async function testWaitForNotifierAlarm() {
     }
 }
 
+function testStopNotifier() {
+    try {
+        addon.stopNotifier();
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 process.on('uncaughtException', function (exception) {
     console.log(exception);
 });
-
 
 testGetDevices()
     .then(testReceiveMessage)
@@ -143,7 +170,12 @@ testGetDevices()
     .then(testCloseStreamSession)
     .then(testGetCANDetailStatus)
     .then(testSendCANMessage)
+    .then(testRegisterDeviceToHAL)
+    .then(testSendHALMessage)
+    .then(testUnregisterDeviceFromHAL)
+    .then(testInitializeNotifier)
     .then(testWaitForNotifierAlarm)
+    .then(testStopNotifier)
     .catch((error)  => {
         console.log(error);
     });
