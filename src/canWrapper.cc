@@ -360,3 +360,14 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
     return Napi::Number::New(env, (int)status);
 }
+
+void waitForNotifierAlarm(const Napi::CallbackInfo& info) {
+    uint32_t time = info[0].As<Napi::Number>().Uint32Value();
+    int32_t status;
+
+    uint32_t m_notifier = HAL_InitializeNotifier(&status);
+    HAL_UpdateNotifierAlarm(m_notifier, HAL_GetFPGATime(&status) + time, &status);
+    HAL_WaitForNotifierAlarm(m_notifier, &status);
+    HAL_StopNotifier(m_notifier, &status);
+    HAL_CleanNotifier(m_notifier, &status);
+}

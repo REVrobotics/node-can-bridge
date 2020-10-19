@@ -34,3 +34,4 @@ export const readStreamSession: (descriptor:string, sessionHandle:number, messag
 export const closeStreamSession: (descriptor:string, sessionHandle:number) => number = addon.closeStreamSession;
 export const getCANDetailStatus: (descriptor:string) => CanDeviceStatus = addon.getCANDetailStatus;
 export const sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendCANMessage;
+export const waitForNotifierAlarm: (time:number) => void = addon.waitForNotifierAlarm;

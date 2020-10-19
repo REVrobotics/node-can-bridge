@@ -25,3 +25,4 @@ export declare const readStreamSession: (descriptor: string, sessionHandle: numb
 export declare const closeStreamSession: (descriptor: string, sessionHandle: number) => number;
 export declare const getCANDetailStatus: (descriptor: string) => CanDeviceStatus;
 export declare const sendCANMessage: (descriptor: string, messageId: number, messageData: number[], repeatPeriod: number) => number;
+export declare const waitForNotifierAlarm: (time: number) => void;

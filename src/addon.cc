@@ -20,6 +20,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, getCANDetailStatus));
     exports.Set(Napi::String::New(env, "sendCANMessage"),
                 Napi::Function::New(env, sendCANMessage));
+    exports.Set(Napi::String::New(env, "waitForNotifierAlarm"),
+                Napi::Function::New(env, waitForNotifierAlarm));
     return exports;
 }
 

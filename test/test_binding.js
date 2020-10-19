@@ -121,9 +121,20 @@ async function testSendCANMessage() {
     }
 }
 
+async function testWaitForNotifierAlarm() {
+    try {
+        const start = Date.now();
+        addon.waitForNotifierAlarm(10000);
+        console.log("Time passed:", Date.now() - start);
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 process.on('uncaughtException', function (exception) {
     console.log(exception);
 });
+
 
 testGetDevices()
     .then(testReceiveMessage)
@@ -132,6 +143,7 @@ testGetDevices()
     .then(testCloseStreamSession)
     .then(testGetCANDetailStatus)
     .then(testSendCANMessage)
+    .then(testWaitForNotifierAlarm)
     .catch((error)  => {
         console.log(error);
     });
