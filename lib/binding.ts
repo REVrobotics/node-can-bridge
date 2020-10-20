@@ -41,4 +41,4 @@ export const stopNotifier: () => void = addon.stopNotifier;
 export const writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<number> = promisify(addon.writeDfuToBin);
 export const openHALStreamSession: (messageId: number, messageMask:number, numMessages:number) => number = addon.openHALStreamSession;
 export const readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[] = addon.readHALStreamSession;
-export const closeHALStreamSession: () => void = addon.closeHALStreamSession;
+export const closeHALStreamSession: (streamHandle:number) => void = addon.closeHALStreamSession;
