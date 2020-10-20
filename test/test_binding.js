@@ -159,6 +159,35 @@ function testStopNotifier() {
     }
 }
 
+async function testOpenHALStreamSession() {
+    try {
+        const handle = addon.openHALStreamSession(0, 0, 8);
+        return handle;
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
+async function testReadHALStreamSession(handle) {
+    try {
+        await new Promise(resolve => {setTimeout(resolve, 200)});
+        const data = addon.readHALStreamSession(handle, 8);
+        console.log("Got stream from HAL:", data);
+        return handle;
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
+async function testCloseHALStreamSession(handle) {
+    try {
+        addon.closeHALStreamSession(handle);
+        console.log("Closed HAL stream");
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 process.on('uncaughtException', function (exception) {
     console.log(exception);
 });
@@ -172,6 +201,9 @@ testGetDevices()
     .then(testSendCANMessage)
     .then(testRegisterDeviceToHAL)
     .then(testSendHALMessage)
+    .then(testOpenHALStreamSession)
+    .then(testReadHALStreamSession)
+    .then(testCloseHALStreamSession)
     .then(testUnregisterDeviceFromHAL)
     .then(testInitializeNotifier)
     .then(testWaitForNotifierAlarm)

@@ -16,4 +16,7 @@ void intializeNotifier(const Napi::CallbackInfo& info);
 void waitForNotifierAlarm(const Napi::CallbackInfo& info);
 void stopNotifier(const Napi::CallbackInfo& info);
 void writeDfuToBin(const Napi::CallbackInfo& info);
+Napi::Number openHALStreamSession(const Napi::CallbackInfo& info);
+Napi::Array readHALStreamSession(const Napi::CallbackInfo& info);
+void closeHALStreamSession(const Napi::CallbackInfo& info);
 #endif

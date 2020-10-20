@@ -374,6 +374,67 @@ Napi::Number sendHALMessage(const Napi::CallbackInfo& info) {
     return Napi::Number::New(env, (int)status);
 }
 
+// Params:
+//   messageId: Number
+//   messageMask: Number
+//   numMessages: Number
+// Returns:
+//   streamHandle: Number
+Napi::Number openHALStreamSession(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    uint32_t messageId = info[0].As<Napi::Number>().Uint32Value();
+    uint32_t messageMask = info[1].As<Napi::Number>().Uint32Value();
+    uint32_t numMessages = info[2].As<Napi::Number>().Uint32Value();
+
+    int32_t status;
+    uint32_t streamHandle;
+    HAL_CAN_OpenStreamSession(&streamHandle, messageId, messageMask, numMessages, &status);
+    return Napi::Number::New(env, (int)streamHandle);
+}
+
+// Params:
+//   streamHandle: Number
+//   numMessages: Number
+// Returns:
+//   messages: Array
+Napi::Array readHALStreamSession(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    uint32_t streamHandle = info[0].As<Napi::Number>().Uint32Value();
+    uint32_t numMessages = info[1].As<Napi::Number>().Uint32Value();
+
+    int32_t status;
+    uint32_t messagesRead;
+    HAL_CANStreamMessage *messages = new HAL_CANStreamMessage[numMessages];
+    HAL_CAN_ReadStreamSession(streamHandle, messages, numMessages, &messagesRead, &status);
+    std::cout << "Read " << messagesRead << std::endl;
+    Napi::Array messageArray = Napi::Array::New(env);
+    for (uint32_t i = 0; i < messagesRead; i++) {
+            Napi::HandleScope scope(env);
+            Napi::Object message = Napi::Object::New(env);
+            message.Set("messageID", messages[i].messageID);
+            message.Set("timeStamp", messages[i].timeStamp);
+
+            int messageLength = std::min((int)messages[i].dataSize, 8);
+            Napi::Array data = Napi::Array::New(env, messageLength);
+            for (int m = 0; m < messageLength; m++) {
+                Napi::HandleScope scope(env);
+                data[m] = Napi::Number::New(env, messages[i].data[m]);
+            }
+            message.Set("data", data);
+            messageArray[i] = message;
+    }
+    delete[] messages;
+    return messageArray;
+}
+
+// Params:
+//   streamHandle: Number
+void closeHALStreamSession(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    uint32_t streamHandle = info[0].As<Napi::Number>().Uint32Value();
+    HAL_CAN_CloseStreamSession(streamHandle);
+}
+
 void intializeNotifier(const Napi::CallbackInfo& info) {
     int32_t status;
     m_notifier = HAL_InitializeNotifier(&status);

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.writeDfuToBin = exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
+exports.closeHALStreamSession = exports.readHALStreamSession = exports.openHALStreamSession = exports.writeDfuToBin = exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
 var util_1 = require("util");
 var addon = require('bindings')('addon');
 exports.getDevices = addon.getDevices;
@@ -17,3 +17,6 @@ exports.intializeNotifier = addon.intializeNotifier;
 exports.waitForNotifierAlarm = util_1.promisify(addon.waitForNotifierAlarm);
 exports.stopNotifier = addon.stopNotifier;
 exports.writeDfuToBin = util_1.promisify(addon.writeDfuToBin);
+exports.openHALStreamSession = addon.openHALStreamSession;
+exports.readHALStreamSession = addon.readHALStreamSession;
+exports.closeHALStreamSession = addon.closeHALStreamSession;
