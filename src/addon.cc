@@ -28,6 +28,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, waitForNotifierAlarm));
     exports.Set(Napi::String::New(env, "stopNotifier"),
                 Napi::Function::New(env, stopNotifier));
+    exports.Set(Napi::String::New(env, "writeDfuToBin"),
+                Napi::Function::New(env, writeDfuToBin));
     return exports;
 }
 

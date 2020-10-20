@@ -144,7 +144,7 @@ function testInitializeNotifier() {
 async function testWaitForNotifierAlarm() {
     try {
         const start = Date.now();
-        addon.waitForNotifierAlarm(10000);
+        await addon.waitForNotifierAlarm(1000);
         console.log("Time passed:", Date.now() - start);
     } catch(error) {
         assert.fail(error);

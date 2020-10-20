@@ -29,3 +29,4 @@ export declare const sendHALMessage: (messageId: number, messageData: number[], 
 export declare const intializeNotifier: () => void;
 export declare const waitForNotifierAlarm: (time: number) => Promise<number>;
 export declare const stopNotifier: () => void;
+export declare const writeDfuToBin: (dfuFileName: string, binFileName: string) => Promise<number>;

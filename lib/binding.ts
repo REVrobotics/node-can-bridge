@@ -38,3 +38,4 @@ export const sendHALMessage: (messageId: number, messageData: number[], repeatPe
 export const intializeNotifier: () => void = addon.intializeNotifier;
 export const waitForNotifierAlarm: (time:number) => Promise<number> = promisify(addon.waitForNotifierAlarm);
 export const stopNotifier: () => void = addon.stopNotifier;
+export const writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<number> = promisify(addon.writeDfuToBin);

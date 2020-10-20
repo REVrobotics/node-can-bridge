@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
+exports.writeDfuToBin = exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = void 0;
 var util_1 = require("util");
 var addon = require('bindings')('addon');
 exports.getDevices = addon.getDevices;
@@ -16,3 +16,4 @@ exports.sendHALMessage = addon.sendHALMessage;
 exports.intializeNotifier = addon.intializeNotifier;
 exports.waitForNotifierAlarm = util_1.promisify(addon.waitForNotifierAlarm);
 exports.stopNotifier = addon.stopNotifier;
+exports.writeDfuToBin = util_1.promisify(addon.writeDfuToBin);

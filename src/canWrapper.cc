@@ -13,6 +13,7 @@
 #include <map>
 #include <vector>
 #include "canWrapper.h"
+#include "DfuSeFile.h"
 
 #define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
 
@@ -392,4 +393,19 @@ void stopNotifier(const Napi::CallbackInfo& info) {
     int32_t status;
     HAL_StopNotifier(m_notifier, &status);
     HAL_CleanNotifier(m_notifier, &status);
+}
+
+void writeDfuToBin(const Napi::CallbackInfo& info) {
+    std::string dfuFileName = info[0].As<Napi::String>().Utf8Value();
+    std::string binFileName = info[1].As<Napi::String>().Utf8Value();
+    Napi::Function cb = info[2].As<Napi::Function>();
+
+    dfuse::DFUFile dfuFile(dfuFileName.c_str());
+    int status = 0;
+    if (dfuFile && dfuFile.Images().size() > 0 && dfuFile.Images()[0]) {
+        dfuFile.Images()[0].Write(binFileName, dfuse::writer::Bin);
+    } else {
+        status = 1;
+    }
+    cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
 }
