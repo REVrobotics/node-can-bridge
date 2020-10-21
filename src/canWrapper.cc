@@ -54,8 +54,9 @@ bool addDeviceToMap(std::string descriptor) {
 // Params: none
 // Returns:
 //   devices: Array<{descriptor:string, name:string, driverName:string}
-Napi::Array getDevices(const Napi::CallbackInfo& info) {
+void getDevices(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
+    Napi::Function cb = info[0].As<Napi::Function>();
     c_CANBridge_ScanHandle CANHandle = CANBridge_Scan();
 
     int numDevices = CANBridge_NumDevices(CANHandle);
@@ -88,7 +89,7 @@ Napi::Array getDevices(const Napi::CallbackInfo& info) {
 
     removeExtraDevicesFromDeviceMap(descriptors);
     CANBridge_FreeScan(CANHandle);
-    return devices;
+    cb.Call(env.Global(), {info.Env().Null(), devices});
 }
 
 

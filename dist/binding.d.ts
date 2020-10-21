@@ -16,7 +16,7 @@ export interface CanDeviceStatus {
     transmitErr: number;
     percentBusUtilization: number;
 }
-export declare const getDevices: () => CanDeviceInfo[];
+export declare const getDevices: () => Promise<CanDeviceInfo[]>;
 export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => number;
 export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<number>;
 export declare const receiveMessage: (descriptor: string, messageId: number, messageMask: number) => CanMessage;
@@ -32,4 +32,4 @@ export declare const stopNotifier: () => void;
 export declare const writeDfuToBin: (dfuFileName: string, binFileName: string) => Promise<number>;
 export declare const openHALStreamSession: (messageId: number, messageMask: number, numMessages: number) => number;
 export declare const readHALStreamSession: (streamHandle: number, numMessages: number) => CanMessage[];
-export declare const closeHALStreamSession: () => void;
+export declare const closeHALStreamSession: (streamHandle: number) => void;

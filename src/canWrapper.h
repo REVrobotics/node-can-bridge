@@ -2,7 +2,7 @@
 #define CAN_LIB
 #include <napi.h>
 
-Napi::Array getDevices(const Napi::CallbackInfo& info);
+void getDevices(const Napi::CallbackInfo& info);
 Napi::Number registerDeviceToHAL(const Napi::CallbackInfo& info);
 void unregisterDeviceFromHAL(const Napi::CallbackInfo& info);
 Napi::Object receiveMessage(const Napi::CallbackInfo& info);

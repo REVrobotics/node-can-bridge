@@ -7,7 +7,7 @@ let devices = [];
 async function testGetDevices() {
     assert(addon.getDevices, "getDevices is undefined");
     try {
-        devices = addon.getDevices();
+        devices = await addon.getDevices();
         console.log(`Found ${devices.length} device(s)`);
         devices.forEach((device) => {
             console.log(device);
@@ -16,7 +16,7 @@ async function testGetDevices() {
             assert(device.hasOwnProperty("driverName"), "Device does not have a driver name");
         });
     } catch(error) {
-        assert.fail(error);
+        assert.fail(error.toString());
     }
 }
 
