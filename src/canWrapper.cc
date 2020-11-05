@@ -5,6 +5,7 @@
 #include <rev/CANBridgeUtils.h>
 #include <rev/Drivers/CandleWinUSB/CandleWinUSBDriver.h>
 #include <rev/Drivers/CandleWinUSB/CandleWinUSBDevice.h>
+#include <utils/ThreadUtils.h>
 #include <hal/HAL.h>
 #include <hal/CAN.h>
 #include <napi.h>
@@ -189,7 +190,7 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
 }
 
 // Params:
-//   descriptor: Number
+//   descriptor: String
 //   messageId: Number
 //   messageMask: Number
 // Returns:
@@ -218,6 +219,18 @@ Napi::Object receiveHalMessage(const Napi::CallbackInfo& info) {
     messageInfo.Set("data", napiMessage);
 
     return messageInfo;
+}
+
+// Params:
+//   descriptor: String
+//   priority: Number
+void setThreadPriority(const Napi::CallbackInfo& info) {
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t priority = info[1].As<Napi::Number>().Uint32Value();
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) return;
+    deviceIterator->second->setThreadPriority(static_cast<rev::usb::utils::ThreadPriority>(priority));
 }
 
 

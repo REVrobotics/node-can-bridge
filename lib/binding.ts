@@ -22,6 +22,16 @@ export interface CanDeviceStatus {
     percentBusUtilization: number;
 }
 
+export enum ThreadPriority {
+    Low,
+    BelowNormal,
+    Normal,
+    AboveNormal,
+    High,
+    PriorityMax,
+    PriorityError
+}
+
 export const getDevices: () => Promise<CanDeviceInfo[]> = promisify(addon.getDevices);
 export const registerDeviceToHAL:
     (descriptor:string, messageId:Number, messageMask:number) => number = addon.registerDeviceToHAL;
@@ -42,3 +52,4 @@ export const writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<
 export const openHALStreamSession: (messageId: number, messageMask:number, numMessages:number) => number = addon.openHALStreamSession;
 export const readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[] = addon.readHALStreamSession;
 export const closeHALStreamSession: (streamHandle:number) => void = addon.closeHALStreamSession;
+export const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void = addon.setThreadPriority;

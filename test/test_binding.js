@@ -133,6 +133,16 @@ async function testSendHALMessage() {
     }
 }
 
+async function testSetThreadPriority() {
+    assert(addon.setThreadPriority, "setThreadPriority is undefined");
+    try {
+        if (devices.length ===  0) return;
+        addon.setThreadPriority(devices[0].descriptor, 4);
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 function testInitializeNotifier() {
     try {
         addon.intializeNotifier();
@@ -210,6 +220,7 @@ testGetDevices()
     .then(testInitializeNotifier)
     .then(testWaitForNotifierAlarm)
     .then(testStopNotifier)
+    .then(testSetThreadPriority)
     .catch((error)  => {
         console.log(error);
     });

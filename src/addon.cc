@@ -36,6 +36,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, readHALStreamSession));
     exports.Set(Napi::String::New(env, "closeHALStreamSession"),
                 Napi::Function::New(env, closeHALStreamSession));
+    exports.Set(Napi::String::New(env, "setThreadPriority"),
+                Napi::Function::New(env, setThreadPriority));
     return exports;
 }
 

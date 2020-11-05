@@ -62,6 +62,7 @@ public:
     virtual CANStatus GetCANDetailStatus(float* percentBusUtilization, uint32_t* busOff, uint32_t* txFull, uint32_t* receiveErr, uint32_t* transmitErr) override;
 
     virtual bool IsConnected() override;
+    virtual void setThreadPriority(utils::ThreadPriority priority);
 private:
     candle_handle m_handle;
     CandleWinUSBDeviceThread m_thread;

@@ -16,6 +16,15 @@ export interface CanDeviceStatus {
     transmitErr: number;
     percentBusUtilization: number;
 }
+export declare enum ThreadPriority {
+    Low = 0,
+    BelowNormal = 1,
+    Normal = 2,
+    AboveNormal = 3,
+    High = 4,
+    PriorityMax = 5,
+    PriorityError = 6
+}
 export declare const getDevices: () => Promise<CanDeviceInfo[]>;
 export declare const registerDeviceToHAL: (descriptor: string, messageId: Number, messageMask: number) => number;
 export declare const unregisterDeviceFromHAL: (descriptor: string) => Promise<number>;
@@ -33,3 +42,4 @@ export declare const writeDfuToBin: (dfuFileName: string, binFileName: string) =
 export declare const openHALStreamSession: (messageId: number, messageMask: number, numMessages: number) => number;
 export declare const readHALStreamSession: (streamHandle: number, numMessages: number) => CanMessage[];
 export declare const closeHALStreamSession: (streamHandle: number) => void;
+export declare const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void;

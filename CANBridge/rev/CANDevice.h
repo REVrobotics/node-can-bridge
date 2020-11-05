@@ -33,6 +33,7 @@
 #include "rev/CANMessage.h"
 #include "rev/CANStatus.h"
 #include "rev/CANBridgeUtils.h"
+#include "utils/ThreadUtils.h"
 
 #include <hal/simulation/CanData.h>
 #include <hal/CAN.h>
@@ -60,6 +61,7 @@ public:
     virtual CANStatus GetCANDetailStatus(float* percentBusUtilization, uint32_t* busOff, uint32_t* txFull, uint32_t* receiveErr, uint32_t* transmitErr) = 0;
 
     virtual bool IsConnected() = 0;
+    virtual void setThreadPriority(utils::ThreadPriority priority) {};
 };
 
 } // namespace usb

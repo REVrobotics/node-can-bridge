@@ -78,6 +78,11 @@ public:
         utils::SetThreadPriority(m_thread.get(), utils::ThreadPriority::High);
     }
 
+    void setPriority(utils::ThreadPriority priority) {
+        if (m_thread.get() != nullptr)
+            utils::SetThreadPriority(m_thread.get(), priority);
+    }
+
     void OpenStream(uint32_t* handle, CANBridge_CANFilter filter, uint32_t maxSize, CANStatus *status) override {
         std::lock_guard<std::mutex> lock(m_streamMutex);
 
