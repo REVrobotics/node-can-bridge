@@ -12,6 +12,7 @@
 #include <chrono>
 #include <map>
 #include <vector>
+#include <set>
 #include "canWrapper.h"
 #include "DfuSeFile.h"
 
@@ -19,6 +20,7 @@
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
+std::set<std::string> devicesRegisteredToHal;
 bool halInitialized = false;
 uint32_t m_notifier;
 
@@ -120,6 +122,7 @@ Napi::Number registerDeviceToHAL(const Napi::CallbackInfo& info) {
 
     int32_t status;
     CANBridge_RegisterDeviceToHAL(descriptor_chars, messageId, messageMask, &status);
+    if (status == 0) devicesRegisteredToHal.insert(descriptor);
     return Napi::Number::New(env, status);
 }
 
@@ -135,6 +138,8 @@ void unregisterDeviceFromHAL(const Napi::CallbackInfo& info) {
 
     try {
         CANBridge_UnregisterDeviceFromHAL(descriptor_chars);
+        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end())
+            devicesRegisteredToHal.erase(devicesRegisteredToHal.find(descriptor));
         cb.Call(env.Global(), {env.Null(), Napi::Number::New(env, (int)rev::usb::CANStatus::kOk)});
     } catch (...) {
         cb.Call(env.Global(), {Napi::Number::New(env, (int)rev::usb::CANStatus::kError)});
@@ -158,6 +163,7 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) {
+        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
         Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
         return Napi::Object::New(env);
     }
@@ -181,6 +187,39 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
 
     return messageInfo;
 }
+
+// Params:
+//   descriptor: Number
+//   messageId: Number
+//   messageMask: Number
+// Returns:
+//   data: Object{data:Number[], messageID:number, timeStamp:number}
+Napi::Object receiveHalMessage(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
+    uint32_t messageMask = info[2].As<Napi::Number>().Uint32Value();
+    Napi::Function cb = info[3].As<Napi::Function>();
+
+    uint8_t data[8];
+    uint8_t dataSize = 0;
+    uint32_t timeStamp = 0;
+    int32_t status;
+    HAL_CAN_ReceiveMessage(&messageId, messageMask, data, &dataSize, &timeStamp, &status);
+
+    Napi::Array napiMessage = Napi::Array::New(env, dataSize);
+    for (int i = 0; i < dataSize; i++) {
+        napiMessage[i] =  data[i];
+    }
+
+    Napi::Object messageInfo = Napi::Object::New(env);
+    messageInfo.Set("messageID", messageId);
+    messageInfo.Set("timeStamp", timeStamp);
+    messageInfo.Set("data", napiMessage);
+
+    return messageInfo;
+}
+
 
 // Params:
 //   descriptor: String
@@ -339,6 +378,7 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) {
+        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return sendCANMessageThroughHal(info);
         Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
         return Napi::Number::New(env, 0);
     }
@@ -350,6 +390,30 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
 
     rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataParam.Length());
     rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
+    return Napi::Number::New(env, (int)status);
+}
+
+// Params:
+//   descriptor: string
+//   messageId: Number
+//   messageData: Number[]
+//   repeatPeriod: Number
+// Returns:
+//   status: Number
+Napi::Number sendCANMessageThroughHal(const Napi::CallbackInfo& info) {
+Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
+    Napi::Array dataParam = info[2].As<Napi::Array>();
+    int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
+
+    uint8_t messageData[8];
+    for (int i = 0; i < dataParam.Length(); i++) {
+        messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+    }
+
+    int32_t status;
+    HAL_CAN_SendMessage(messageId, messageData, dataParam.Length(), repeatPeriodMs, &status);
     return Napi::Number::New(env, (int)status);
 }
 
