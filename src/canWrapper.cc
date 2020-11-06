@@ -43,6 +43,7 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
 bool addDeviceToMap(std::string descriptor) {
     char* descriptor_chars = &descriptor[0];
     try {
+        std::cout << "Creating device" << std::endl;
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
             CANDeviceMap[descriptor] = std::move(canDevice);
@@ -54,45 +55,71 @@ bool addDeviceToMap(std::string descriptor) {
     }
 }
 
+class GetDevicesWorker : public Napi::AsyncWorker {
+    public:
+        GetDevicesWorker(Napi::Function& callback)
+        : Napi::AsyncWorker(callback) {}
+
+        ~GetDevicesWorker() {}
+
+    void Execute() override {
+            CANHandle = CANBridge_Scan();
+            numDevices = CANBridge_NumDevices(CANHandle);
+            std::vector<std::string> descriptors;
+            for (int i = 0; i < numDevices; i++) {
+                std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
+
+                if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
+                    if (addDeviceToMap(descriptor)) {
+                        descriptors.push_back(descriptor);
+                        isDeviceAvailable.push_back(true);
+                    } else {
+                        isDeviceAvailable.push_back(false);
+                    }
+                } else {
+                    descriptors.push_back(descriptor);
+                    isDeviceAvailable.push_back(true);
+                }
+            }
+            removeExtraDevicesFromDeviceMap(descriptors);
+    }
+
+    void OnOK() override {
+        Napi::HandleScope scope(Env());
+        Napi::Array devices = Napi::Array::New(Env());
+        for (int i = 0; i < numDevices; i++) {
+            std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
+            std::string name = CANBridge_GetDeviceName(CANHandle, i);
+            std::string driverName = CANBridge_GetDriverName(CANHandle, i);
+
+            Napi::Object deviceInfo = Napi::Object::New(Env());
+            deviceInfo.Set("descriptor", descriptor);
+            deviceInfo.Set("name", name);
+            deviceInfo.Set("driverName", driverName);
+            deviceInfo.Set("available", Napi::Boolean::New(Env(), isDeviceAvailable[i]));
+
+            devices[i] = deviceInfo;
+        }
+
+        CANBridge_FreeScan(CANHandle);
+        Callback().Call({Env().Null(), devices});
+    }
+
+    private:
+        c_CANBridge_ScanHandle CANHandle;
+        int numDevices;
+        std::vector<bool> isDeviceAvailable;
+};
+
 // Params: none
 // Returns:
 //   devices: Array<{descriptor:string, name:string, driverName:string}
 void getDevices(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     Napi::Function cb = info[0].As<Napi::Function>();
-    c_CANBridge_ScanHandle CANHandle = CANBridge_Scan();
 
-    int numDevices = CANBridge_NumDevices(CANHandle);
-    Napi::Array devices = Napi::Array::New(env);
-    std::vector<std::string> descriptors;
-    for (int i = 0; i < numDevices; i++) {
-        std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
-        std::string name = CANBridge_GetDeviceName(CANHandle, i);
-        std::string driverName = CANBridge_GetDriverName(CANHandle, i);
-
-        Napi::Object deviceInfo = Napi::Object::New(env);
-        deviceInfo.Set("descriptor", descriptor);
-        deviceInfo.Set("name", name);
-        deviceInfo.Set("driverName", driverName);
-
-        if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
-            if (addDeviceToMap(descriptor)) {
-                descriptors.push_back(descriptor);
-                deviceInfo.Set("available", true);
-            } else {
-                deviceInfo.Set("available", false);
-            }
-        } else {
-            descriptors.push_back(descriptor);
-            deviceInfo.Set("available", true);
-        }
-
-        devices[i] = deviceInfo;
-    }
-
-    removeExtraDevicesFromDeviceMap(descriptors);
-    CANBridge_FreeScan(CANHandle);
-    cb.Call(env.Global(), {info.Env().Null(), devices});
+    GetDevicesWorker* wk = new GetDevicesWorker(cb);
+    wk->Queue();
 }
 
 
@@ -397,7 +424,7 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     }
 
     uint8_t messageData[8];
-    for (int i = 0; i < dataParam.Length(); i++) {
+    for (uint32_t i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
     }
 
@@ -421,7 +448,7 @@ Napi::Env env = info.Env();
     int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
 
     uint8_t messageData[8];
-    for (int i = 0; i < dataParam.Length(); i++) {
+    for (uint32_t i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
     }
 
@@ -443,7 +470,7 @@ Napi::Number sendHALMessage(const Napi::CallbackInfo& info) {
     int repeatPeriodMs = info[2].As<Napi::Number>().Uint32Value();
 
     uint8_t messageData[8];
-    for (int i = 0; i < dataParam.Length(); i++) {
+    for (uint32_t i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
     }
 
