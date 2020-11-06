@@ -20,6 +20,15 @@ async function testGetDevices() {
     }
 }
 
+async function testConcurrentGetDevices() {
+    try {
+        await Promise.all([addon.getDevices(), addon.getDevices(), addon.getDevices(),
+            addon.getDevices(), addon.getDevices(), addon.getDevices()]);
+    } catch(error) {
+        assert.fail(error.toString());
+    }
+}
+
 async function testRegisterDeviceToHAL() {
     assert(addon.registerDeviceToHAL, "registerDeviceToHAL is undefined");
     try {
@@ -203,6 +212,7 @@ process.on('uncaughtException', function (exception) {
 });
 
 testGetDevices()
+    .then(testConcurrentGetDevices)
     .then(testReceiveMessage)
     .then(testOpenStreamSession)
     .then(testReadStreamSession)

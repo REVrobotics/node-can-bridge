@@ -14,6 +14,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <mutex>
 #include "canWrapper.h"
 #include "DfuSeFile.h"
 
@@ -43,7 +44,6 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
 bool addDeviceToMap(std::string descriptor) {
     char* descriptor_chars = &descriptor[0];
     try {
-        std::cout << "Creating device" << std::endl;
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
             CANDeviceMap[descriptor] = std::move(canDevice);
@@ -55,6 +55,7 @@ bool addDeviceToMap(std::string descriptor) {
     }
 }
 
+std::mutex getDevicesMtx;
 class GetDevicesWorker : public Napi::AsyncWorker {
     public:
         GetDevicesWorker(Napi::Function& callback)
@@ -63,25 +64,27 @@ class GetDevicesWorker : public Napi::AsyncWorker {
         ~GetDevicesWorker() {}
 
     void Execute() override {
-            CANHandle = CANBridge_Scan();
-            numDevices = CANBridge_NumDevices(CANHandle);
-            std::vector<std::string> descriptors;
-            for (int i = 0; i < numDevices; i++) {
-                std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
+        getDevicesMtx.lock();
+        CANHandle = CANBridge_Scan();
+        numDevices = CANBridge_NumDevices(CANHandle);
+        std::vector<std::string> descriptors;
+        for (int i = 0; i < numDevices; i++) {
+            std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
 
-                if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
-                    if (addDeviceToMap(descriptor)) {
-                        descriptors.push_back(descriptor);
-                        isDeviceAvailable.push_back(true);
-                    } else {
-                        isDeviceAvailable.push_back(false);
-                    }
-                } else {
+            if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
+                if (addDeviceToMap(descriptor)) {
                     descriptors.push_back(descriptor);
                     isDeviceAvailable.push_back(true);
+                } else {
+                    isDeviceAvailable.push_back(false);
                 }
+            } else {
+                descriptors.push_back(descriptor);
+                isDeviceAvailable.push_back(true);
             }
-            removeExtraDevicesFromDeviceMap(descriptors);
+        }
+        removeExtraDevicesFromDeviceMap(descriptors);
+        getDevicesMtx.unlock();
     }
 
     void OnOK() override {
