@@ -14,6 +14,7 @@
 #include <map>
 #include <vector>
 #include <set>
+#include <exception>
 #include <mutex>
 #include "canWrapper.h"
 #include "DfuSeFile.h"
@@ -362,7 +363,6 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t sessionHandle = info[1].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[1].As<Napi::Function>();
-    std::cout << "Closing";
 
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) {
@@ -514,7 +514,6 @@ Napi::Array readHALStreamSession(const Napi::CallbackInfo& info) {
     uint32_t messagesRead;
     HAL_CANStreamMessage *messages = new HAL_CANStreamMessage[numMessages];
     HAL_CAN_ReadStreamSession(streamHandle, messages, numMessages, &messagesRead, &status);
-    std::cout << "Read " << messagesRead << std::endl;
     Napi::Array messageArray = Napi::Array::New(env);
     for (uint32_t i = 0; i < messagesRead; i++) {
             Napi::HandleScope scope(env);
