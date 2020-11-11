@@ -515,7 +515,7 @@ Napi::Array readHALStreamSession(const Napi::CallbackInfo& info) {
     HAL_CANStreamMessage *messages = new HAL_CANStreamMessage[numMessages];
     HAL_CAN_ReadStreamSession(streamHandle, messages, numMessages, &messagesRead, &status);
     Napi::Array messageArray = Napi::Array::New(env);
-    for (uint32_t i = 0; i < messagesRead; i++) {
+    for (uint32_t i = 0; i < messagesRead && i < numMessages; i++) {
             Napi::HandleScope scope(env);
             Napi::Object message = Napi::Object::New(env);
             message.Set("messageID", messages[i].messageID);
