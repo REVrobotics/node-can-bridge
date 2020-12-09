@@ -5,6 +5,7 @@
 #include <rev/CANBridgeUtils.h>
 #include <rev/Drivers/CandleWinUSB/CandleWinUSBDriver.h>
 #include <rev/Drivers/CandleWinUSB/CandleWinUSBDevice.h>
+#include <rev/Drivers/SerialPort/SerialDriver.h>
 #include <utils/ThreadUtils.h>
 #include <hal/HAL.h>
 #include <hal/CAN.h>
@@ -22,6 +23,7 @@
 #define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
+rev::usb::SerialDriver* serialDriver = new rev::usb::SerialDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
 std::set<std::string> devicesRegisteredToHal;
 bool halInitialized = false;
@@ -48,6 +50,11 @@ bool addDeviceToMap(std::string descriptor) {
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
             CANDeviceMap[descriptor] = std::move(canDevice);
+            return true;
+        }
+        std::unique_ptr<rev::usb::CANDevice> serialCanDevice = serialDriver->CreateDeviceFromDescriptor(descriptor_chars);
+        if (serialCanDevice != nullptr) {
+            CANDeviceMap[descriptor] = std::move(serialCanDevice);
             return true;
         }
         return false;
