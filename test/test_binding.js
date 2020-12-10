@@ -8,6 +8,7 @@ async function testGetDevices() {
     assert(addon.getDevices, "getDevices is undefined");
     try {
         devices = await addon.getDevices();
+        console.log(devices);
         console.log(`Found ${devices.length} device(s)`);
         devices.forEach((device) => {
             console.log(device);
