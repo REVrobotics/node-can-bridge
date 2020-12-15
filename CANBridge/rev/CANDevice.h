@@ -62,6 +62,7 @@ public:
 
     virtual bool IsConnected() = 0;
     virtual void setThreadPriority(utils::ThreadPriority priority) {};
+    virtual void stopRepeatedMessage(uint32_t messageId) {};
 };
 
 } // namespace usb

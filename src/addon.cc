@@ -38,6 +38,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, closeHALStreamSession));
     exports.Set(Napi::String::New(env, "setThreadPriority"),
                 Napi::Function::New(env, setThreadPriority));
+    exports.Set(Napi::String::New(env, "setSparkMaxHeartbeatData"),
+                Napi::Function::New(env, setSparkMaxHeartbeatData));
     return exports;
 }
 

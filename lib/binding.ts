@@ -53,3 +53,4 @@ export const openHALStreamSession: (messageId: number, messageMask:number, numMe
 export const readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[] = addon.readHALStreamSession;
 export const closeHALStreamSession: (streamHandle:number) => void = addon.closeHALStreamSession;
 export const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void = addon.setThreadPriority;
+export const setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void = addon.setSparkMaxHeartbeatData;

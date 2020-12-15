@@ -83,6 +83,14 @@ public:
             utils::SetThreadPriority(m_thread.get(), priority);
     }
 
+    void stopRepeatedMessage(uint32_t messageId) {
+        for (int i = 0; i < m_sendQueue.size(); i++) {
+            detail::CANThreadSendQueueElement el = m_sendQueue.front();
+            m_sendQueue.pop();
+            if (el.m_msg.GetMessageId() != messageId) m_sendQueue.push(el);
+        }
+    }
+
     void OpenStream(uint32_t* handle, CANBridge_CANFilter filter, uint32_t maxSize, CANStatus *status) override {
         std::lock_guard<std::mutex> lock(m_streamMutex);
 
@@ -154,7 +162,7 @@ private:
    }
 
    bool WriteMessages(detail::CANThreadSendQueueElement el, std::chrono::steady_clock::time_point now) {
-        if (el.m_intervalMs == 0 || (now - el.m_prevTimestamp >= std::chrono::milliseconds(el.m_intervalMs)) ) {
+        if (el.m_intervalMs <= 1 || (now - el.m_prevTimestamp >= std::chrono::milliseconds(el.m_intervalMs)) ) {
             candle_frame_t frame;
             frame.can_dlc = el.m_msg.GetSize();
             // set extended id flag
@@ -191,21 +199,24 @@ private:
                 if (m_sendQueue.size() > 0) {
                     detail::CANThreadSendQueueElement el = m_sendQueue.front();
                     if (el.m_intervalMs == -1) {
-                        m_sendQueue.pop();
+                        while(m_sendQueue.size() > 0) {
+                            m_sendQueue.pop();
+                        }
                         continue;
                     }
 
                     auto now = std::chrono::steady_clock::now();
 
-                    // Don't pop queue if send fails
+                    m_sendQueue.pop();
                     if (WriteMessages(el, now)) {
-                        m_sendQueue.pop();
 
                         // Return to end of queue if repeated
                         if (el.m_intervalMs > 0 ) {
                             el.m_prevTimestamp = now;
                             m_sendQueue.push(el);
                         }
+                    } else {
+                        m_sendQueue.push(el);
                     }
                 }
             }

@@ -63,6 +63,7 @@ public:
 
     virtual bool IsConnected() override;
     virtual void setThreadPriority(utils::ThreadPriority priority);
+    virtual void stopRepeatedMessage(uint32_t messageId);
 private:
     candle_handle m_handle;
     CandleWinUSBDeviceThread m_thread;

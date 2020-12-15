@@ -23,6 +23,7 @@
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
+std::map<std::string, uint8_t*> SparkMaxHeartbeatData;
 std::set<std::string> devicesRegisteredToHal;
 bool halInitialized = false;
 uint32_t m_notifier;
@@ -38,6 +39,7 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
         }
         if (!inDevices) {
             CANDeviceMap.erase(itr->first);
+            SparkMaxHeartbeatData.erase(itr->first);
         }
     }
 }
@@ -48,6 +50,8 @@ bool addDeviceToMap(std::string descriptor) {
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
             CANDeviceMap[descriptor] = std::move(canDevice);
+            uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            SparkMaxHeartbeatData[descriptor] = heartbeat;
             return true;
         }
         return false;
@@ -405,6 +409,22 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     return status;
 }
 
+int _sendCANMessage(std::string descriptor, uint32_t messageId, uint8_t* messageData, int dataSize, int repeatPeriodMs) {
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) {
+        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) {
+            int32_t status;
+            HAL_CAN_SendMessage(messageId, messageData, dataSize, repeatPeriodMs, &status);
+            return status;
+        }
+        return -1;
+    }
+
+    rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataSize);
+    rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
+    return (int)status;
+}
+
 // Params:
 //   descriptor: string
 //   messageId: Number
@@ -419,21 +439,15 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     Napi::Array dataParam = info[2].As<Napi::Array>();
     int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return sendCANMessageThroughHal(info);
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-        return Napi::Number::New(env, 0);
-    }
-
     uint8_t messageData[8];
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
     }
-
-    rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataParam.Length());
-    rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
-    return Napi::Number::New(env, (int)status);
+    int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
+    if (status < 0) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    }
+    return Napi::Number::New(env, status);
 }
 
 // Params:
@@ -576,4 +590,30 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
         status = 1;
     }
     cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
+}
+
+// Params:
+//   descriptor: string
+//   heartbeatData: Number[]
+void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    Napi::Array dataParam = info[1].As<Napi::Array>();
+
+    auto heartbeatIterator = SparkMaxHeartbeatData.find(descriptor);
+    if (heartbeatIterator == SparkMaxHeartbeatData.end()) return;
+
+    auto deviceIterator = CANDeviceMap.find(descriptor);
+    if (deviceIterator == CANDeviceMap.end()) return;
+    _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, -1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+    int sum = 0;
+    for (uint32_t i = 0; i < dataParam.Length(); i++) {
+        heartbeatIterator->second[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+        sum+= heartbeatIterator->second[i];
+    }
+
+    if (sum == 0) _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, -1);
+    else _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, 1);
 }

@@ -64,7 +64,7 @@ public:
         m_threadIntervalMs(threadIntervalMs),
         m_counter(counter) {
     }
-
+    
     virtual void Start() = 0;
 
     void Stop() {

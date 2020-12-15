@@ -208,12 +208,26 @@ async function testCloseHALStreamSession(handle) {
     }
 }
 
+async function testHeartbeat() {
+    try {
+        if (devices.length ===  0) return;
+        await addon.sendCANMessage(devices[0].descriptor, 33882241, [10, 215, 163, 60, 0, 0, 0, 0], 0);
+        await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0xFF));
+        await new Promise(resolve => {setTimeout(resolve, 2000)});
+        console.log("STOPPING");
+        await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0x00));
+        await new Promise(resolve => {setTimeout(resolve, 2000)});
+    } catch(error) {
+        assert.fail(error);
+    }
+}
+
 process.on('uncaughtException', function (exception) {
     console.log(exception);
 });
 
 testGetDevices()
-    .then(testConcurrentGetDevices)
+    /*.then(testConcurrentGetDevices)
     .then(testReceiveMessage)
     .then(testOpenStreamSession)
     .then(testReadStreamSession)
@@ -231,7 +245,8 @@ testGetDevices()
     .then(testInitializeNotifier)
     .then(testWaitForNotifierAlarm)
     .then(testStopNotifier)
-    .then(testSetThreadPriority)
+    .then(testSetThreadPriority)*/
+    .then(testHeartbeat)
     .catch((error)  => {
         console.log(error);
     });

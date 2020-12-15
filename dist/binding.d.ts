@@ -43,3 +43,4 @@ export declare const openHALStreamSession: (messageId: number, messageMask: numb
 export declare const readHALStreamSession: (streamHandle: number, numMessages: number) => CanMessage[];
 export declare const closeHALStreamSession: (streamHandle: number) => void;
 export declare const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void;
+export declare const setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void;
