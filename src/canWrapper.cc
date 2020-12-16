@@ -23,7 +23,6 @@
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
-std::map<std::string, uint8_t*> SparkMaxHeartbeatData;
 std::set<std::string> devicesRegisteredToHal;
 bool halInitialized = false;
 uint32_t m_notifier;
@@ -39,7 +38,6 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
         }
         if (!inDevices) {
             CANDeviceMap.erase(itr->first);
-            SparkMaxHeartbeatData.erase(itr->first);
         }
     }
 }
@@ -50,8 +48,6 @@ bool addDeviceToMap(std::string descriptor) {
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
             CANDeviceMap[descriptor] = std::move(canDevice);
-            uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            SparkMaxHeartbeatData[descriptor] = heartbeat;
             return true;
         }
         return false;
@@ -600,20 +596,18 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     Napi::Array dataParam = info[1].As<Napi::Array>();
 
-    auto heartbeatIterator = SparkMaxHeartbeatData.find(descriptor);
-    if (heartbeatIterator == SparkMaxHeartbeatData.end()) return;
-
+    uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
     auto deviceIterator = CANDeviceMap.find(descriptor);
     if (deviceIterator == CANDeviceMap.end()) return;
-    _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, -1);
+    _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     int sum = 0;
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
-        heartbeatIterator->second[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
-        sum+= heartbeatIterator->second[i];
+        heartbeat[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+        sum+= heartbeat[i];
     }
 
-    if (sum == 0) _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, -1);
-    else _sendCANMessage(descriptor, 0x2052C80, heartbeatIterator->second, 8, 1);
+    if (sum == 0) _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
+    else _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 1);
 }

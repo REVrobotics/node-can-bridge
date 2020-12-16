@@ -227,7 +227,7 @@ process.on('uncaughtException', function (exception) {
 });
 
 testGetDevices()
-    /*.then(testConcurrentGetDevices)
+    .then(testConcurrentGetDevices)
     .then(testReceiveMessage)
     .then(testOpenStreamSession)
     .then(testReadStreamSession)
@@ -245,8 +245,8 @@ testGetDevices()
     .then(testInitializeNotifier)
     .then(testWaitForNotifierAlarm)
     .then(testStopNotifier)
-    .then(testSetThreadPriority)*/
-    .then(testHeartbeat)
+    .then(testSetThreadPriority)
+    /*.then(testHeartbeat)*/
     .catch((error)  => {
         console.log(error);
     });
