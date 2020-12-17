@@ -1,6 +1,6 @@
 {
     "name": "node-can-bridge",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "author": "REV Robotics",
     "description": "Get CAN Data",
     "license": "MIT",
@@ -12,7 +12,7 @@
     },
     "dependencies": {
         "bindings": "^1.5.0",
-        "node-addon-api": "^2.0.2",
+        "node-addon-api": "1.7.2",
         "node-pre-gyp": "^0.15.0",
         "prebuild-install": "^5.3.5"
     },
