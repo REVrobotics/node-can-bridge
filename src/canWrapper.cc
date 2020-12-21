@@ -16,6 +16,7 @@
 #include <set>
 #include <exception>
 #include <mutex>
+#include <ctime>
 #include "canWrapper.h"
 #include "DfuSeFile.h"
 
@@ -25,6 +26,8 @@ rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
 std::set<std::string> devicesRegisteredToHal;
 bool halInitialized = false;
+std::vector<std::string> heartbeatsRunning;
+auto latestHeartbeatAck = std::chrono::system_clock::now();
 uint32_t m_notifier;
 
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
@@ -588,6 +591,25 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
     cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
 }
 
+void heartbeatWatchdog() {
+    while(heartbeatsRunning.size() > 0) {
+        std::this_thread::sleep_for (std::chrono::seconds(1));
+        auto now = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
+        if (elapsed_seconds.count() > 1) {
+            uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+                _sendCANMessage(heartbeatsRunning[i], 0x2052C80, heartbeat, 8, -1);
+            }
+            heartbeatsRunning.clear();
+        }
+    }
+}
+
+void ackSparkMaxHeartbeat(const Napi::CallbackInfo& info) {
+    latestHeartbeatAck = std::chrono::system_clock::now();
+}
+
 // Params:
 //   descriptor: string
 //   heartbeatData: Number[]
@@ -608,6 +630,27 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         sum+= heartbeat[i];
     }
 
-    if (sum == 0) _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
-    else _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 1);
+    if (sum == 0) {
+        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
+        for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            if (heartbeatsRunning[i].compare(descriptor) == 0) {
+                heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
+                return;
+            }
+        }
+    }
+    else {
+        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 1);
+        if (heartbeatsRunning.size() == 0) {
+            heartbeatsRunning.push_back(descriptor);
+            latestHeartbeatAck = std::chrono::system_clock::now();
+            std::thread hb(heartbeatWatchdog);
+            hb.detach();
+        } else {
+            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+                if (heartbeatsRunning[i].compare(descriptor) == 0) return;
+            }
+            heartbeatsRunning.push_back(descriptor);
+        }
+    }
 }

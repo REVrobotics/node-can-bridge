@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setSparkMaxHeartbeatData = exports.setThreadPriority = exports.closeHALStreamSession = exports.readHALStreamSession = exports.openHALStreamSession = exports.writeDfuToBin = exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = exports.ThreadPriority = void 0;
+exports.ackSparkMaxHeartbeat = exports.setSparkMaxHeartbeatData = exports.setThreadPriority = exports.closeHALStreamSession = exports.readHALStreamSession = exports.openHALStreamSession = exports.writeDfuToBin = exports.stopNotifier = exports.waitForNotifierAlarm = exports.intializeNotifier = exports.sendHALMessage = exports.sendCANMessage = exports.getCANDetailStatus = exports.closeStreamSession = exports.readStreamSession = exports.openStreamSession = exports.receiveMessage = exports.unregisterDeviceFromHAL = exports.registerDeviceToHAL = exports.getDevices = exports.ThreadPriority = void 0;
 var util_1 = require("util");
 var addon = require('bindings')('addon');
 var ThreadPriority;
@@ -32,3 +32,4 @@ exports.readHALStreamSession = addon.readHALStreamSession;
 exports.closeHALStreamSession = addon.closeHALStreamSession;
 exports.setThreadPriority = addon.setThreadPriority;
 exports.setSparkMaxHeartbeatData = addon.setSparkMaxHeartbeatData;
+exports.ackSparkMaxHeartbeat = addon.ackSparkMaxHeartbeat;

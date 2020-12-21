@@ -213,7 +213,9 @@ async function testHeartbeat() {
         if (devices.length ===  0) return;
         await addon.sendCANMessage(devices[0].descriptor, 33882241, [10, 215, 163, 60, 0, 0, 0, 0], 0);
         await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0xFF));
-        await new Promise(resolve => {setTimeout(resolve, 2000)});
+        const interval = setInterval(addon.ackSparkMaxHeartbeat, 900);
+        await new Promise(resolve => {setTimeout(resolve, 6000)});
+        clearInterval(interval);
         console.log("STOPPING");
         await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0x00));
         await new Promise(resolve => {setTimeout(resolve, 2000)});
