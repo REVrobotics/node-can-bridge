@@ -380,7 +380,7 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
 // Params:
 //   descriptor: String
 // Returns:
-//   status: Object{percentBusUtilization:Number, busOff:Number, txFull:Number, receiveErr:Number, transmitError:Number}
+//   status: Object{percentBusUtilization:Number, busOff:Number, txFull:Number, receiveErr:Number, transmitError:Number, lastErrorTime:Number}
 Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
@@ -397,7 +397,8 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     uint32_t txFull;
     uint32_t receiveErr;
     uint32_t transmitErr;
-    deviceIterator->second->GetCANDetailStatus(&percentBusUtilization, &busOff, &txFull, &receiveErr, &transmitErr);
+    uint32_t lastErrorTime;
+    deviceIterator->second->GetCANDetailStatus(&percentBusUtilization, &busOff, &txFull, &receiveErr, &transmitErr, &lastErrorTime);
 
     Napi::Object status = Napi::Object::New(env);
     status.Set("percentBusUtilization", percentBusUtilization);
@@ -405,6 +406,7 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     status.Set("txFull", txFull);
     status.Set("receiveErr", receiveErr);
     status.Set("transmitErr", transmitErr);
+    status.Set("lastErrorTime", lastErrorTime);
     return status;
 }
 
@@ -640,7 +642,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         }
     }
     else {
-        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 1);
+        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 10);
         if (heartbeatsRunning.size() == 0) {
             heartbeatsRunning.push_back(descriptor);
             latestHeartbeatAck = std::chrono::system_clock::now();

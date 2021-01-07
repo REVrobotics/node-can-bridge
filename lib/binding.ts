@@ -20,6 +20,7 @@ export interface CanDeviceStatus {
     receiveErr: number;
     transmitErr: number;
     percentBusUtilization: number;
+    lastErrorTime: number;
 }
 
 export enum ThreadPriority {

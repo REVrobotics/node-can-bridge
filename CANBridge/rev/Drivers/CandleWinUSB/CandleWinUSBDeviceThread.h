@@ -83,6 +83,11 @@ public:
             utils::SetThreadPriority(m_thread.get(), priority);
     }
 
+    void clearQueue() {
+        std::cout << "Queue Size: " << m_sendQueue.size() << std::endl;
+        bool empty = m_sendQueue.empty();
+    }
+
     void stopRepeatedMessage(uint32_t messageId) {
         for (int i = 0; i < m_sendQueue.size(); i++) {
             detail::CANThreadSendQueueElement el = m_sendQueue.front();
@@ -112,11 +117,11 @@ private:
        candle_frame_t incomingFrame;
     
         reading = candle_frame_read(m_device, &incomingFrame, 0);
-
         // Received a new frame, store it
         if (reading) {
             candle_frametype_t frameType = candle_frame_type(&incomingFrame);
             if(frameType == CANDLE_FRAMETYPE_ERROR) {
+                time(&lastErrorTime);
                 // Parse error data
                 if (incomingFrame.can_id & 0x00000040) {
                     m_statusDetails.busOffCount++;
@@ -172,7 +177,7 @@ private:
 
             // TODO: Feed back an error
             if (candle_frame_send(m_device, 0, &frame, false, 20) == false) {
-                // std::cout << "Failed to send message: " << std::hex << (int)el.m_msg.GetMessageId() << std::dec << "  " << candle_error_text(candle_dev_last_error(m_device)) << std::endl;
+                std::cout << "Failed to send message: " << std::hex << (int)el.m_msg.GetMessageId() << std::dec << "  " << candle_error_text(candle_dev_last_error(m_device)) << std::endl;
                 m_threadStatus = CANStatus::kDeviceWriteError;
                 m_statusErrCount++;
                 return false;

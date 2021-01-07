@@ -136,7 +136,8 @@ async function testSendHALMessage() {
     try {
         if (devices.length ===  0) return;
         // Send identify to SparkMax #1
-        const status = addon.sendHALMessage(0x2051D81, [], 0);
+        const status = addon.sendHALMessage(0x2051D81, [], 500);
+        await new Promise(resolve => {setTimeout(resolve, 2000)});
         console.log("Status:", status);
     } catch(error) {
         assert.fail(error);
