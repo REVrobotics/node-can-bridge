@@ -20,6 +20,10 @@
             '<(module_root_dir)/CANBridge/x86-64/wpiutil.lib',
             '<(module_root_dir)/CANBridge/x86-64/wpiHal.lib',
       ],
+      'copies':[{
+        'destination': './build/Release',
+        'files':['<(module_root_dir)/bin/*'],
+      }],
       'msvs_settings': {
         'VCCLCompilerTool': {
             'ExceptionHandling': 1,
