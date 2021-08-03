@@ -12,24 +12,20 @@
     },
     "dependencies": {
         "bindings": "^1.5.0",
-        "node-addon-api": "1.7.2",
-        "node-pre-gyp": "^0.15.0",
-        "prebuild-install": "^5.3.6"
+        "node-addon-api": "1.7.2"
     },
     "devDependencies": {
         "@types/node": "^14.17.7",
         "node-gyp": "^7.1.2",
-        "prebuild": "^10.0.1",
         "typescript": "^3.9.10"
     },
     "peerDependencies": {
         "node-gyp": "^7.0.0"
     },
     "scripts": {
-        "install": "prebuild-install || node-gyp rebuild",
+        "install": "node-gyp rebuild",
         "pretest": "node-gyp build && tsc",
-        "test": "node --napi-modules test/test_binding.js",
-        "publish": "node-gyp rebuild && prebuild -t 80 -r electron --include-regex \"\\.(node|dll)$\""
+        "test": "node --napi-modules test/test_binding.js"
     },
     "engines": {
         "node": ">=12.0.0"
