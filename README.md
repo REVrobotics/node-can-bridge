@@ -6,4 +6,4 @@ This package enables Node.js applications to use a CAN bus over USB.
 
 1. Update `version` field in `package.json`
 2. Push to GitHub
-3. Run `npm run publish`
+3. Run `npm publish`

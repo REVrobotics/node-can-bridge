@@ -1,6 +1,6 @@
 {
     "name": "node-can-bridge",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "author": "REV Robotics",
     "description": "Access CAN Data from a USB device in Node.js",
     "license": "MIT",
