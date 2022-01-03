@@ -23,5 +23,6 @@ Napi::Array readHALStreamSession(const Napi::CallbackInfo& info);
 void closeHALStreamSession(const Napi::CallbackInfo& info);
 void setThreadPriority(const Napi::CallbackInfo& info);
 void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info);
-void ackSparkMaxHeartbeat(const Napi::CallbackInfo& info);
+void startRevCommonHeartbeat(const Napi::CallbackInfo& info);
+void ackHeartbeats(const Napi::CallbackInfo& info);
 #endif

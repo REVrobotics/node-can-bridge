@@ -55,4 +55,5 @@ export const readHALStreamSession: (streamHandle:number, numMessages:number) => 
 export const closeHALStreamSession: (streamHandle:number) => void = addon.closeHALStreamSession;
 export const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void = addon.setThreadPriority;
 export const setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void = addon.setSparkMaxHeartbeatData;
-export const ackSparkMaxHeartbeat: () => void = addon.ackSparkMaxHeartbeat;
+export const startRevCommonHeartbeat: (descriptor: string) => void = addon.startRevCommonHeartbeat;
+export const ackHeartbeats: () => void = addon.ackHeartbeats;

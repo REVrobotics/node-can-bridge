@@ -642,7 +642,7 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
     cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
 }
 
-void heartbeatWatchdog() {
+void heartbeatsWatchdog() {
     while (true) {
         std::this_thread::sleep_for (std::chrono::seconds(1));
 
@@ -653,18 +653,50 @@ void heartbeatWatchdog() {
         auto now = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
         if (elapsed_seconds.count() > 1) {
-            uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            uint8_t sparkMaxHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            uint8_t revCommonHeartbeat[] = {0};
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
-                _sendCANMessage(heartbeatsRunning[i], 0x2052C80, heartbeat, 8, -1);
+                _sendCANMessage(heartbeatsRunning[i], 0x2052C80, sparkMaxHeartbeat, 8, -1);
+                _sendCANMessage(heartbeatsRunning[i], 0x00502C0, revCommonHeartbeat, 1, -1);
             }
             heartbeatsRunning.clear();
         }
     }
 }
 
-void ackSparkMaxHeartbeat(const Napi::CallbackInfo& info) {
+void ackHeartbeats(const Napi::CallbackInfo& info) {
     std::scoped_lock lock{watchdogMtx};
     latestHeartbeatAck = std::chrono::system_clock::now();
+}
+
+// Params:
+//   descriptor: string
+void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+
+    {
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) return;
+    }
+
+    uint8_t payload[] = {1};
+    _sendCANMessage(descriptor, 0x00502C0, payload, 1, 20);
+
+    std::scoped_lock lock{watchdogMtx};
+
+    if (heartbeatsRunning.size() == 0) {
+        heartbeatsRunning.push_back(descriptor);
+        latestHeartbeatAck = std::chrono::system_clock::now();
+        std::thread hb(heartbeatsWatchdog);
+        hb.detach();
+    } else {
+        for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            if (heartbeatsRunning[i].compare(descriptor) == 0) return;
+        }
+        heartbeatsRunning.push_back(descriptor);
+    }
 }
 
 // Params:
@@ -694,12 +726,6 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
 
     if (sum == 0) {
         _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
-        for(int i = 0; i < heartbeatsRunning.size(); i++) {
-            if (heartbeatsRunning[i].compare(descriptor) == 0) {
-                heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
-                return;
-            }
-        }
     }
     else {
         _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 10);
@@ -709,7 +735,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         if (heartbeatsRunning.size() == 0) {
             heartbeatsRunning.push_back(descriptor);
             latestHeartbeatAck = std::chrono::system_clock::now();
-            std::thread hb(heartbeatWatchdog);
+            std::thread hb(heartbeatsWatchdog);
             hb.detach();
         } else {
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
