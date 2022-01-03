@@ -10,6 +10,7 @@ This package enables Node.js applications to use a CAN bus over USB.
 4. Run `npm run prepublish`
 5. Commit change to git
 6. Run `git tag v<version>`
-7. Run `git push --tags` 
-8. Run `npm publish --access public`
-9. Create a new release on GitHub with an explanation of the changes
+7. Run `git push`
+8. Run `git push --tags` 
+9. Run `npm publish --access public`
+10. Create a new release on GitHub with an explanation of the changes
