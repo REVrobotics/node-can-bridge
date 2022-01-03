@@ -646,6 +646,17 @@ void heartbeatsWatchdog() {
     while (true) {
         std::this_thread::sleep_for (std::chrono::seconds(1));
 
+        {
+            // Erase removed CAN buses from heartbeatsRunning
+            std::scoped_lock lock{watchdogMtx, canDevicesMtx};
+            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+                auto deviceIterator = canDeviceMap.find(heartbeatsRunning[i]);
+                if (deviceIterator == canDeviceMap.end()) {
+                    heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
+                }
+            }
+        }
+
         std::scoped_lock lock{watchdogMtx};
 
         if (heartbeatsRunning.size() < 1) { break; }
