@@ -23,15 +23,21 @@
 #define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
-std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> CANDeviceMap;
-std::set<std::string> devicesRegisteredToHal;
+
+std::set<std::string> devicesRegisteredToHal; // TODO(Noah): Protect with mutex
 bool halInitialized = false;
-std::vector<std::string> heartbeatsRunning;
-auto latestHeartbeatAck = std::chrono::system_clock::now();
 uint32_t m_notifier;
 
+std::mutex canDevicesMtx;
+std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> canDeviceMap;
+
+std::mutex watchdogMtx;
+std::vector<std::string> heartbeatsRunning;
+auto latestHeartbeatAck = std::chrono::system_clock::now();
+
+// Only call when holding canDevicesMtx
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
-    for (auto itr = CANDeviceMap.begin(); itr != CANDeviceMap.end(); ++itr) {
+    for (auto itr = canDeviceMap.begin(); itr != canDeviceMap.end(); ++itr) {
         bool inDevices = false;
         for(auto descriptor = descriptors.begin(); descriptor != descriptors.end(); ++descriptor) {
             if (*descriptor == itr->first){
@@ -40,17 +46,18 @@ void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
             }
         }
         if (!inDevices) {
-            CANDeviceMap.erase(itr->first);
+            canDeviceMap.erase(itr->first);
         }
     }
 }
 
+// Only call when holding canDevicesMtx
 bool addDeviceToMap(std::string descriptor) {
     char* descriptor_chars = &descriptor[0];
     try {
         std::unique_ptr<rev::usb::CANDevice> canDevice = driver->CreateDeviceFromDescriptor(descriptor_chars);
         if (canDevice != nullptr) {
-            CANDeviceMap[descriptor] = std::move(canDevice);
+            canDeviceMap[descriptor] = std::move(canDevice);
             return true;
         }
         return false;
@@ -59,7 +66,6 @@ bool addDeviceToMap(std::string descriptor) {
     }
 }
 
-std::mutex getDevicesMtx;
 class GetDevicesWorker : public Napi::AsyncWorker {
     public:
         GetDevicesWorker(Napi::Function& callback)
@@ -68,14 +74,15 @@ class GetDevicesWorker : public Napi::AsyncWorker {
         ~GetDevicesWorker() {}
 
     void Execute() override {
-        getDevicesMtx.lock();
+        std::scoped_lock lock{canDevicesMtx};
+
         CANHandle = CANBridge_Scan();
         numDevices = CANBridge_NumDevices(CANHandle);
         std::vector<std::string> descriptors;
         for (int i = 0; i < numDevices; i++) {
             std::string descriptor = CANBridge_GetDeviceDescriptor(CANHandle, i);
 
-            if (CANDeviceMap.find(descriptor) == CANDeviceMap.end()) {
+            if (canDeviceMap.find(descriptor) == canDeviceMap.end()) {
                 if (addDeviceToMap(descriptor)) {
                     descriptors.push_back(descriptor);
                     isDeviceAvailable.push_back(true);
@@ -88,7 +95,6 @@ class GetDevicesWorker : public Napi::AsyncWorker {
             }
         }
         removeExtraDevicesFromDeviceMap(descriptors);
-        getDevicesMtx.unlock();
     }
 
     void OnOK() override {
@@ -150,9 +156,12 @@ Napi::Number registerDeviceToHAL(const Napi::CallbackInfo& info) {
         halInitialized = true;
     }
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator != CANDeviceMap.end()) {
-        CANDeviceMap.erase(deviceIterator->first);
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator != canDeviceMap.end()) {
+            canDeviceMap.erase(deviceIterator->first);
+        }
     }
 
     int32_t status;
@@ -195,15 +204,21 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
     Napi::Function cb = info[3].As<Napi::Function>();
 
     std::shared_ptr<rev::usb::CANMessage> message;
+    std::shared_ptr<rev::usb::CANDevice> device;
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-        return Napi::Object::New(env);
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Object::New(env);
+        }
+
+        device = deviceIterator->second;
     }
 
-    rev::usb::CANStatus status = deviceIterator->second->ReceiveCANMessage(message, messageId, messageMask);
+    rev::usb::CANStatus status = device->ReceiveCANMessage(message, messageId, messageMask);
     if (status != rev::usb::CANStatus::kOk) {
         Napi::Error::New(env, "Receiving message failed with status code " + std::to_string((int)status)).ThrowAsJavaScriptException();
         return Napi::Object::New(env);
@@ -262,8 +277,9 @@ void setThreadPriority(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     uint32_t priority = info[1].As<Napi::Number>().Uint32Value();
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) return;
+    std::scoped_lock lock{canDevicesMtx};
+    auto deviceIterator = canDeviceMap.find(descriptor);
+    if (deviceIterator == canDeviceMap.end()) return;
     deviceIterator->second->setThreadPriority(static_cast<rev::usb::utils::ThreadPriority>(priority));
 }
 
@@ -288,14 +304,21 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
     filter.messageMask = messageMask;
     uint32_t sessionHandle;
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-        return Napi::Number::New(env, 0);
+    std::shared_ptr<rev::usb::CANDevice> device;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Number::New(env, 0);
+        }
+
+        device = deviceIterator->second;
     }
 
     try {
-        rev::usb::CANStatus status = deviceIterator->second->OpenStreamSession(&sessionHandle, filter, maxSize);
+        rev::usb::CANStatus status = device->OpenStreamSession(&sessionHandle, filter, maxSize);
         if (status != rev::usb::CANStatus::kOk) {
             Napi::Error::New(env, "Opening stream session failed with error code "+(int)status).ThrowAsJavaScriptException();
         } else {
@@ -322,14 +345,21 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
     HAL_CANStreamMessage *messages = new HAL_CANStreamMessage[messagesToRead];
     uint32_t messagesRead = 0;
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-        return Napi::Array::New(env);
+    std::shared_ptr<rev::usb::CANDevice> device;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Array::New(env);
+        }
+
+        device = deviceIterator->second;
     }
 
     try {
-        deviceIterator->second->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
+        device->ReadStreamSession(sessionHandle, messages, messagesToRead, &messagesRead);
         Napi::HandleScope scope(env);
         Napi::Array messageArray = Napi::Array::New(env);
         for (uint32_t i = 0; i < messagesRead; i++) {
@@ -367,8 +397,9 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     uint32_t sessionHandle = info[1].As<Napi::Number>().Uint32Value();
     Napi::Function cb = info[1].As<Napi::Function>();
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
+    std::scoped_lock lock{canDevicesMtx};
+    auto deviceIterator = canDeviceMap.find(descriptor);
+    if (deviceIterator == canDeviceMap.end()) {
         Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
         return Napi::Number::New(env, 0);
     }
@@ -386,10 +417,17 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     Napi::Function cb = info[1].As<Napi::Function>();
 
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
-        return Napi::Object::New(env);
+    std::shared_ptr<rev::usb::CANDevice> device;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Object::New(env);
+        }
+
+        device = deviceIterator->second;
     }
 
     float percentBusUtilization;
@@ -398,7 +436,7 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
     uint32_t receiveErr;
     uint32_t transmitErr;
     uint32_t lastErrorTime;
-    deviceIterator->second->GetCANDetailStatus(&percentBusUtilization, &busOff, &txFull, &receiveErr, &transmitErr, &lastErrorTime);
+    device->GetCANDetailStatus(&percentBusUtilization, &busOff, &txFull, &receiveErr, &transmitErr, &lastErrorTime);
 
     Napi::Object status = Napi::Object::New(env);
     status.Set("percentBusUtilization", percentBusUtilization);
@@ -411,8 +449,19 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
 }
 
 int _sendCANMessage(std::string descriptor, uint32_t messageId, uint8_t* messageData, int dataSize, int repeatPeriodMs) {
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) {
+    std::shared_ptr<rev::usb::CANDevice> device;
+    bool foundDevice = false;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator != canDeviceMap.end()) {
+            device = deviceIterator->second;
+            foundDevice = true;
+        }
+    }
+
+    if (!foundDevice) {
         if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) {
             int32_t status;
             HAL_CAN_SendMessage(messageId, messageData, dataSize, repeatPeriodMs, &status);
@@ -422,7 +471,7 @@ int _sendCANMessage(std::string descriptor, uint32_t messageId, uint8_t* message
     }
 
     rev::usb::CANMessage* message = new rev::usb::CANMessage(messageId, messageData, dataSize);
-    rev::usb::CANStatus status = deviceIterator->second->SendCANMessage(*message, repeatPeriodMs);
+    rev::usb::CANStatus status = device->SendCANMessage(*message, repeatPeriodMs);
     return (int)status;
 }
 
@@ -594,8 +643,13 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
 }
 
 void heartbeatWatchdog() {
-    while(heartbeatsRunning.size() > 0) {
+    while (true) {
         std::this_thread::sleep_for (std::chrono::seconds(1));
+
+        std::scoped_lock lock{watchdogMtx};
+
+        if (heartbeatsRunning.size() < 1) { break; }
+        
         auto now = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
         if (elapsed_seconds.count() > 1) {
@@ -609,6 +663,7 @@ void heartbeatWatchdog() {
 }
 
 void ackSparkMaxHeartbeat(const Napi::CallbackInfo& info) {
+    std::scoped_lock lock{watchdogMtx};
     latestHeartbeatAck = std::chrono::system_clock::now();
 }
 
@@ -621,8 +676,13 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     Napi::Array dataParam = info[1].As<Napi::Array>();
 
     uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
-    auto deviceIterator = CANDeviceMap.find(descriptor);
-    if (deviceIterator == CANDeviceMap.end()) return;
+    
+    {
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) return;
+    }
+
     _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
@@ -643,6 +703,9 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     }
     else {
         _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 10);
+
+        std::scoped_lock lock{watchdogMtx};
+
         if (heartbeatsRunning.size() == 0) {
             heartbeatsRunning.push_back(descriptor);
             latestHeartbeatAck = std::chrono::system_clock::now();
