@@ -670,7 +670,6 @@ void heartbeatsWatchdog() {
                 _sendCANMessage(heartbeatsRunning[i], 0x2052C80, sparkMaxHeartbeat, 8, -1);
                 _sendCANMessage(heartbeatsRunning[i], 0x00502C0, revCommonHeartbeat, 1, -1);
             }
-            heartbeatsRunning.clear();
         }
     }
 }
