@@ -649,7 +649,7 @@ void heartbeatsWatchdog() {
         std::scoped_lock lock{watchdogMtx};
 
         if (heartbeatsRunning.size() < 1) { break; }
-        
+
         auto now = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
         if (elapsed_seconds.count() > 1) {
