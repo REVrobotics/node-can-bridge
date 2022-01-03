@@ -1,6 +1,6 @@
 {
     "name": "@rev-robotics/can-bridge",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "author": "REV Robotics",
     "description": "Access CAN Data from a USB device in Node.js",
     "license": "MIT",
@@ -24,6 +24,7 @@
     },
     "scripts": {
         "install": "node-gyp rebuild",
+        "prepublish": "node-gyp build && tsc",
         "pretest": "node-gyp build && tsc",
         "test": "node --napi-modules test/test_binding.js"
     },
