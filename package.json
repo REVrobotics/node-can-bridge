@@ -11,21 +11,19 @@
         "url": "https://github.com/REVrobotics/node-can-bridge.git"
     },
     "dependencies": {
-        "bindings": "^1.5.0",
-        "node-addon-api": "1.7.2"
+        "node-addon-api": "^6.0.0",
+        "node-gyp-build": "^4.6.0"
     },
     "devDependencies": {
-        "@types/node": "^14.17.7",
-        "node-gyp": "^7.1.2",
-        "typescript": "^3.9.10"
-    },
-    "peerDependencies": {
-        "node-gyp": "^7.0.0"
+        "@types/node": "^16.18.18",
+        "node-gyp": "^9.3.1",
+        "prebuildify": "^5.0.1",
+        "typescript": "^5.0.2"
     },
     "scripts": {
-        "install": "node-gyp rebuild",
-        "prepublish": "node-gyp build && tsc",
-        "pretest": "node-gyp build && tsc",
+        "install": "node-gyp-build",
+        "prepublishOnly": "tsc && prebuildify --napi",
+        "pretest": "node-gyp-build && tsc",
         "test": "node --napi-modules test/test_binding.js"
     },
     "engines": {

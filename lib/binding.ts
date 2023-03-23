@@ -1,5 +1,6 @@
 import {promisify} from "util";
-const addon = require('bindings')('addon');
+import * as path from "path";
+const addon = require('node-gyp-build')(path.join(__dirname, '..'));
 
 export interface CanMessage {
     data: number[];
