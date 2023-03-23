@@ -22,7 +22,7 @@
     },
     "scripts": {
         "install": "node-gyp-build",
-        "prepublishOnly": "prebuildify --napi",
+        "prepublishOnly": "tsc && prebuildify --napi",
         "pretest": "node-gyp-build && tsc",
         "test": "node --napi-modules test/test_binding.js"
     },
