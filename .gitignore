@@ -3,3 +3,5 @@ node_modules/
 .idea/
 prebuilds/
 dist/
+externalCompileTimeDeps/
+temp/
