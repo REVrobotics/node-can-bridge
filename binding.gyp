@@ -8,7 +8,7 @@
        ],
       'include_dirs': [
         "src/",
-        "CANBridge/",
+        "externalCompileTimeDeps/include",
         "<!@(node -p \"require('node-addon-api').include\")"
         ],
       'defines': [
@@ -16,19 +16,19 @@
       ],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
       'libraries': [
-            '<(module_root_dir)/CANBridge/x86-64/CANBridge.lib',
-            '<(module_root_dir)/CANBridge/x86-64/wpiutil.lib',
-            '<(module_root_dir)/CANBridge/x86-64/wpiHal.lib',
+            '<(module_root_dir)/externalCompileTimeDeps/CANBridge.lib',
+            '<(module_root_dir)/externalCompileTimeDeps/wpiHal.lib',
+            '<(module_root_dir)/externalCompileTimeDeps/wpiutil.lib',
       ],
       'msvs_settings': {
         'VCCLCompilerTool': {
             'ExceptionHandling': 1,
-            'AdditionalOptions': [ '-std:c++17' ],
+            'AdditionalOptions': [ '-std:c++20' ],
             'RuntimeLibrary': 0
         },
       },
-      "cflags_cc!": ["-std=c++17", '-fno-exceptions'],
-      "cflags!": ["-std=c++17", '-fno-exceptions'],
+      "cflags_cc!": ["-std=c++20", '-fno-exceptions'],
+      "cflags!": ["-std=c++20", '-fno-exceptions'],
     }
   ]
 }

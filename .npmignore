@@ -1,5 +1,8 @@
 build
+externalCompileTimeDeps
+temp
 lib
+scripts
 test
 .idea
 tsconfig.json
