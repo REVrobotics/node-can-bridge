@@ -18,6 +18,7 @@
       'libraries': [
             '<(module_root_dir)/externalCompileTimeDeps/CANBridge.lib',
             '<(module_root_dir)/externalCompileTimeDeps/wpiHal.lib',
+            '<(module_root_dir)/externalCompileTimeDeps/wpiutil.lib',
       ],
       'msvs_settings': {
         'VCCLCompilerTool': {

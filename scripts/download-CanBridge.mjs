@@ -16,6 +16,8 @@ try {
         downloadCanBridgeArtifact('CANBridge.dll', runtimeArtifactsPath),
         downloadCanBridgeArtifact('wpiHal.lib', externalCompileTimeDepsPath),
         downloadCanBridgeArtifact('wpiHal.dll', runtimeArtifactsPath),
+        downloadCanBridgeArtifact('wpiutil.lib', externalCompileTimeDepsPath),
+        downloadCanBridgeArtifact('wpiutil.dll', runtimeArtifactsPath),
         downloadCanBridgeArtifact('headers.zip', tempDir),
     ));
 
