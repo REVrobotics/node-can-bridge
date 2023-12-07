@@ -156,7 +156,7 @@ async function testSetThreadPriority() {
 
 function testInitializeNotifier() {
     try {
-        addon.intializeNotifier();
+        addon.initializeNotifier();
     } catch(error) {
         assert.fail(error);
     }
