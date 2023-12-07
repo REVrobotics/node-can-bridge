@@ -1,6 +1,5 @@
 import {promisify} from "util";
 import * as path from "path";
-const addon = require('node-gyp-build')(path.join(__dirname, '..'));
 
 export interface CanMessage {
     data: number[];
@@ -34,27 +33,73 @@ export enum ThreadPriority {
     PriorityError
 }
 
-export const getDevices: () => Promise<CanDeviceInfo[]> = promisify(addon.getDevices);
-export const registerDeviceToHAL:
-    (descriptor:string, messageId:Number, messageMask:number) => number = addon.registerDeviceToHAL;
-export const unregisterDeviceFromHAL: (descriptor:string) => Promise<number> = promisify(addon.unregisterDeviceFromHAL);
-export const receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage = addon.receiveMessage;
-export const openStreamSession: (descriptor:string, messageId:number, messageMask:number, maxSize:number) =>
-    number = addon.openStreamSession;
-export const readStreamSession: (descriptor:string, sessionHandle:number, messagesToRead:number) =>
-    CanMessage[] = addon.readStreamSession;
-export const closeStreamSession: (descriptor:string, sessionHandle:number) => number = addon.closeStreamSession;
-export const getCANDetailStatus: (descriptor:string) => CanDeviceStatus = addon.getCANDetailStatus;
-export const sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendCANMessage;
-export const sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number = addon.sendHALMessage;
-export const intializeNotifier: () => void = addon.intializeNotifier;
-export const waitForNotifierAlarm: (time:number) => Promise<number> = promisify(addon.waitForNotifierAlarm);
-export const stopNotifier: () => void = addon.stopNotifier;
-export const writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<number> = promisify(addon.writeDfuToBin);
-export const openHALStreamSession: (messageId: number, messageMask:number, numMessages:number) => number = addon.openHALStreamSession;
-export const readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[] = addon.readHALStreamSession;
-export const closeHALStreamSession: (streamHandle:number) => void = addon.closeHALStreamSession;
-export const setThreadPriority: (descriptor: string, priority: ThreadPriority) => void = addon.setThreadPriority;
-export const setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void = addon.setSparkMaxHeartbeatData;
-export const startRevCommonHeartbeat: (descriptor: string) => void = addon.startRevCommonHeartbeat;
-export const ackHeartbeats: () => void = addon.ackHeartbeats;
+export class CanBridge {
+    getDevices: () => Promise<CanDeviceInfo[]>;
+    registerDeviceToHAL: (descriptor:string, messageId:Number, messageMask:number) => number;
+    unregisterDeviceFromHAL: (descriptor:string) => Promise<number>;
+    receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage;
+    openStreamSession: (descriptor:string, messageId:number, messageMask:number, maxSize:number) => number;
+    readStreamSession: (descriptor:string, sessionHandle:number, messagesToRead:number) => CanMessage[];
+    closeStreamSession: (descriptor:string, sessionHandle:number) => number;
+    getCANDetailStatus: (descriptor:string) => CanDeviceStatus;
+    sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number;
+    sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number;
+    intializeNotifier: () => void;
+    waitForNotifierAlarm: (time:number) => Promise<number>;
+    stopNotifier: () => void;
+    writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<number>;
+    openHALStreamSession: (messageId: number, messageMask:number, numMessages:number) => number;
+    readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[];
+    closeHALStreamSession: (streamHandle:number) => void;
+    setThreadPriority: (descriptor: string, priority: ThreadPriority) => void;
+    setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void;
+    startRevCommonHeartbeat: (descriptor: string) => void;
+    ackHeartbeats: () => void;
+
+    constructor() {
+        const addon = require('node-gyp-build')(path.join(__dirname, '..'));
+        this.getDevices = promisify(addon.getDevices);
+        this.registerDeviceToHAL = addon.registerDeviceToHAL;
+        this.unregisterDeviceFromHAL = promisify(addon.unregisterDeviceFromHAL);
+        this.receiveMessage = addon.receiveMessage;
+        this.openStreamSession = addon.openStreamSession;
+        this.readStreamSession = addon.readStreamSession;
+        this.closeStreamSession = addon.closeStreamSession;
+        this.getCANDetailStatus = addon.getCANDetailStatus;
+        this.sendCANMessage = addon.sendCANMessage;
+        this.sendHALMessage = addon.sendHALMessage;
+        this.intializeNotifier = addon.intializeNotifier;
+        this.waitForNotifierAlarm = promisify(addon.waitForNotifierAlarm);
+        this.stopNotifier = addon.stopNotifier;
+        this.writeDfuToBin = promisify(addon.writeDfuToBin);
+        this.openHALStreamSession = addon.openHALStreamSession;
+        this.readHALStreamSession = addon.readHALStreamSession;
+        this.closeHALStreamSession = addon.closeHALStreamSession;
+        this.setThreadPriority = addon.setThreadPriority;
+        this.setSparkMaxHeartbeatData = addon.setSparkMaxHeartbeatData;
+        this.startRevCommonHeartbeat = addon.startRevCommonHeartbeat;
+        this.ackHeartbeats = addon.ackHeartbeats;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
