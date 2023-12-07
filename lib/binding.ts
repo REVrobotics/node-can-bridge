@@ -53,7 +53,7 @@ export class CanBridge {
     getCANDetailStatus: (descriptor:string) => CanDeviceStatus;
     sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number;
     sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number;
-    intializeNotifier: () => void;
+    initializeNotifier: () => void;
     waitForNotifierAlarm: (time:number) => Promise<number>;
     stopNotifier: () => void;
     writeDfuToBin: (dfuFileName:string, binFileName:string) => Promise<number>;
@@ -79,7 +79,7 @@ export class CanBridge {
             this.getCANDetailStatus = addon.getCANDetailStatus;
             this.sendCANMessage = addon.sendCANMessage;
             this.sendHALMessage = addon.sendHALMessage;
-            this.intializeNotifier = addon.intializeNotifier;
+            this.initializeNotifier = addon.initializeNotifier;
             this.waitForNotifierAlarm = promisify(addon.waitForNotifierAlarm);
             this.stopNotifier = addon.stopNotifier;
             this.writeDfuToBin = promisify(addon.writeDfuToBin);

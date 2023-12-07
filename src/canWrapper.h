@@ -14,7 +14,7 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info);
 Napi::Number sendCANMessage(const Napi::CallbackInfo& info);
 Napi::Number sendCANMessageThroughHal(const Napi::CallbackInfo& info);
 Napi::Number sendHALMessage(const Napi::CallbackInfo& info);
-void intializeNotifier(const Napi::CallbackInfo& info);
+void initializeNotifier(const Napi::CallbackInfo& info);
 void waitForNotifierAlarm(const Napi::CallbackInfo& info);
 void stopNotifier(const Napi::CallbackInfo& info);
 void writeDfuToBin(const Napi::CallbackInfo& info);

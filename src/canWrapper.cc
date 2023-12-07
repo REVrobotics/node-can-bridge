@@ -606,7 +606,7 @@ void closeHALStreamSession(const Napi::CallbackInfo& info) {
     HAL_CAN_CloseStreamSession(streamHandle);
 }
 
-void intializeNotifier(const Napi::CallbackInfo& info) {
+void initializeNotifier(const Napi::CallbackInfo& info) {
     int32_t status;
     m_notifier = HAL_InitializeNotifier(&status);
 }
@@ -718,7 +718,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     Napi::Array dataParam = info[1].As<Napi::Array>();
 
     uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
-    
+
     {
         std::scoped_lock lock{canDevicesMtx};
         auto deviceIterator = canDeviceMap.find(descriptor);
