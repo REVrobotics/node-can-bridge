@@ -33,6 +33,15 @@ export enum ThreadPriority {
     PriorityError
 }
 
+export class CanBridgeInitializationError extends Error {
+    cause: any;
+
+    constructor(cause: any) {
+        super("Failed to load the CANBridge native addon. This is likely a packaging problem, or perhaps the Visual Studio C++ redistributable package is not installed. See cause field for details.");
+        this.cause = cause;
+    }
+}
+
 export class CanBridge {
     getDevices: () => Promise<CanDeviceInfo[]>;
     registerDeviceToHAL: (descriptor:string, messageId:Number, messageMask:number) => number;
@@ -57,28 +66,33 @@ export class CanBridge {
     ackHeartbeats: () => void;
 
     constructor() {
-        const addon = require('node-gyp-build')(path.join(__dirname, '..'));
-        this.getDevices = promisify(addon.getDevices);
-        this.registerDeviceToHAL = addon.registerDeviceToHAL;
-        this.unregisterDeviceFromHAL = promisify(addon.unregisterDeviceFromHAL);
-        this.receiveMessage = addon.receiveMessage;
-        this.openStreamSession = addon.openStreamSession;
-        this.readStreamSession = addon.readStreamSession;
-        this.closeStreamSession = addon.closeStreamSession;
-        this.getCANDetailStatus = addon.getCANDetailStatus;
-        this.sendCANMessage = addon.sendCANMessage;
-        this.sendHALMessage = addon.sendHALMessage;
-        this.intializeNotifier = addon.intializeNotifier;
-        this.waitForNotifierAlarm = promisify(addon.waitForNotifierAlarm);
-        this.stopNotifier = addon.stopNotifier;
-        this.writeDfuToBin = promisify(addon.writeDfuToBin);
-        this.openHALStreamSession = addon.openHALStreamSession;
-        this.readHALStreamSession = addon.readHALStreamSession;
-        this.closeHALStreamSession = addon.closeHALStreamSession;
-        this.setThreadPriority = addon.setThreadPriority;
-        this.setSparkMaxHeartbeatData = addon.setSparkMaxHeartbeatData;
-        this.startRevCommonHeartbeat = addon.startRevCommonHeartbeat;
-        this.ackHeartbeats = addon.ackHeartbeats;
+        try {
+            const addon = require('node-gyp-build')(path.join(__dirname, '..'));
+
+            this.getDevices = promisify(addon.getDevices);
+            this.registerDeviceToHAL = addon.registerDeviceToHAL;
+            this.unregisterDeviceFromHAL = promisify(addon.unregisterDeviceFromHAL);
+            this.receiveMessage = addon.receiveMessage;
+            this.openStreamSession = addon.openStreamSession;
+            this.readStreamSession = addon.readStreamSession;
+            this.closeStreamSession = addon.closeStreamSession;
+            this.getCANDetailStatus = addon.getCANDetailStatus;
+            this.sendCANMessage = addon.sendCANMessage;
+            this.sendHALMessage = addon.sendHALMessage;
+            this.intializeNotifier = addon.intializeNotifier;
+            this.waitForNotifierAlarm = promisify(addon.waitForNotifierAlarm);
+            this.stopNotifier = addon.stopNotifier;
+            this.writeDfuToBin = promisify(addon.writeDfuToBin);
+            this.openHALStreamSession = addon.openHALStreamSession;
+            this.readHALStreamSession = addon.readHALStreamSession;
+            this.closeHALStreamSession = addon.closeHALStreamSession;
+            this.setThreadPriority = addon.setThreadPriority;
+            this.setSparkMaxHeartbeatData = addon.setSparkMaxHeartbeatData;
+            this.startRevCommonHeartbeat = addon.startRevCommonHeartbeat;
+            this.ackHeartbeats = addon.ackHeartbeats;
+        } catch (e: any) {
+            throw new CanBridgeInitializationError(e);
+        }
     }
 }
 
