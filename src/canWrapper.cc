@@ -22,6 +22,8 @@
 
 #define DEVICE_NOT_FOUND_ERROR "Device not found. Make sure to run getDevices()"
 
+#define REV_COMMON_HEARTBEAT_ID 0x00502C0
+#define SPARK_HEARTBEAT_ID 0x2052C80
 #define HEARTBEAT_PERIOD_MS 20
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
@@ -669,8 +671,8 @@ void heartbeatsWatchdog() {
             uint8_t sparkMaxHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
             uint8_t revCommonHeartbeat[] = {0};
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
-                _sendCANMessage(heartbeatsRunning[i], 0x2052C80, sparkMaxHeartbeat, 8, -1);
-                _sendCANMessage(heartbeatsRunning[i], 0x00502C0, revCommonHeartbeat, 1, -1);
+                _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, sparkMaxHeartbeat, 8, -1);
+                _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, revCommonHeartbeat, 1, -1);
             }
         }
     }
@@ -694,7 +696,7 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
     }
 
     uint8_t payload[] = {1};
-    _sendCANMessage(descriptor, 0x00502C0, payload, 1, HEARTBEAT_PERIOD_MS);
+    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, payload, 1, HEARTBEAT_PERIOD_MS);
 
     std::scoped_lock lock{watchdogMtx};
 
@@ -727,7 +729,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         if (deviceIterator == canDeviceMap.end()) return;
     }
 
-    _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
+    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, -1);
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     int sum = 0;
@@ -737,10 +739,10 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     }
 
     if (sum == 0) {
-        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
+        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, -1);
     }
     else {
-        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, HEARTBEAT_PERIOD_MS);
+        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, HEARTBEAT_PERIOD_MS);
 
         std::scoped_lock lock{watchdogMtx};
 
