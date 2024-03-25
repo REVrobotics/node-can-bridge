@@ -22,6 +22,8 @@
 
 #define DEVICE_NOT_FOUND_ERROR "Device not found. Make sure to run getDevices()"
 
+#define HEARTBEAT_PERIOD_MS 20
+
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 
 std::set<std::string> devicesRegisteredToHal; // TODO(Noah): Protect with mutex
@@ -692,7 +694,7 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
     }
 
     uint8_t payload[] = {1};
-    _sendCANMessage(descriptor, 0x00502C0, payload, 1, 20);
+    _sendCANMessage(descriptor, 0x00502C0, payload, 1, HEARTBEAT_PERIOD_MS);
 
     std::scoped_lock lock{watchdogMtx};
 
@@ -738,7 +740,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, -1);
     }
     else {
-        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, 10);
+        _sendCANMessage(descriptor, 0x2052C80, heartbeat, 8, HEARTBEAT_PERIOD_MS);
 
         std::scoped_lock lock{watchdogMtx};
 
