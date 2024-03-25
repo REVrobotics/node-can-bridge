@@ -20,7 +20,7 @@
 #include "canWrapper.h"
 #include "DfuSeFile.h"
 
-#define DEVICE_NOT_FOUND_ERROR "Device not found.  Make sure to run getDevices()"
+#define DEVICE_NOT_FOUND_ERROR "Device not found. Make sure to run getDevices()"
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 
