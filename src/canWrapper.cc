@@ -37,7 +37,7 @@ std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> canDeviceMap;
 
 std::mutex watchdogMtx;
 std::vector<std::string> heartbeatsRunning;
-auto latestHeartbeatAck = std::chrono::system_clock::now();
+auto latestHeartbeatAck = std::chrono::steady_clock::now();
 
 // Only call when holding canDevicesMtx
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
@@ -665,7 +665,7 @@ void heartbeatsWatchdog() {
 
         if (heartbeatsRunning.size() < 1) { break; }
 
-        auto now = std::chrono::system_clock::now();
+        auto now = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
         if (elapsed_seconds.count() > 1) {
             uint8_t sparkMaxHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -680,7 +680,7 @@ void heartbeatsWatchdog() {
 
 void ackHeartbeats(const Napi::CallbackInfo& info) {
     std::scoped_lock lock{watchdogMtx};
-    latestHeartbeatAck = std::chrono::system_clock::now();
+    latestHeartbeatAck = std::chrono::steady_clock::now();
 }
 
 // Params:
@@ -702,7 +702,7 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
 
     if (heartbeatsRunning.size() == 0) {
         heartbeatsRunning.push_back(descriptor);
-        latestHeartbeatAck = std::chrono::system_clock::now();
+        latestHeartbeatAck = std::chrono::steady_clock::now();
         std::thread hb(heartbeatsWatchdog);
         hb.detach();
     } else {
@@ -748,7 +748,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
 
         if (heartbeatsRunning.size() == 0) {
             heartbeatsRunning.push_back(descriptor);
-            latestHeartbeatAck = std::chrono::system_clock::now();
+            latestHeartbeatAck = std::chrono::steady_clock::now();
             std::thread hb(heartbeatsWatchdog);
             hb.detach();
         } else {
