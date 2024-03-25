@@ -729,8 +729,8 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         if (deviceIterator == canDeviceMap.end()) return;
     }
 
+    // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
     _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, -1);
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     int sum = 0;
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
