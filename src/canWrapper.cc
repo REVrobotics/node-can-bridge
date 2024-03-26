@@ -719,9 +719,13 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
     }
 
     std::array<uint8_t, 1> payload = {1};
-    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, payload.data(), 1, HEARTBEAT_PERIOD_MS);
 
     std::scoped_lock lock{watchdogMtx};
+
+    if (!heartbeatTimeoutExpired) {
+        _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, payload.data(), 1, HEARTBEAT_PERIOD_MS);
+    }
+
     revCommonHeartbeatMap[descriptor] = payload;
 
     if (heartbeatsRunning.size() == 0) {
@@ -753,18 +757,21 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         if (deviceIterator == canDeviceMap.end()) return;
     }
 
-    // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, -1);
-
     int sum = 0;
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
         heartbeat[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
         sum+= heartbeat[i];
     }
 
-    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, HEARTBEAT_PERIOD_MS);
-
     std::scoped_lock lock{watchdogMtx};
+
+    if (!heartbeatTimeoutExpired) {
+        // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
+        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, -1);
+
+        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, HEARTBEAT_PERIOD_MS);
+    }
+
     sparkHeartbeatMap[descriptor] = heartbeat;
 
     if (heartbeatsRunning.size() == 0) {
