@@ -6,3 +6,6 @@ test
 .idea
 tsconfig.json
 README.md
+
+# Ensure we don't accidentally include tarballs produced by npm pack
+rev-robotics-can-bridge-*.tgz
