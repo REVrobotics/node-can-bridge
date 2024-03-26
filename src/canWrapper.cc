@@ -12,6 +12,7 @@
 #include <thread>
 #include <chrono>
 #include <map>
+#include <array>
 #include <vector>
 #include <set>
 #include <exception>
@@ -33,10 +34,15 @@ bool halInitialized = false;
 uint32_t m_notifier;
 
 std::mutex canDevicesMtx;
+// These values should only be accessed while holding canDevicesMtx
 std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> canDeviceMap;
 
 std::mutex watchdogMtx;
+// These values should only be accessed while holding watchdogMtx
 std::vector<std::string> heartbeatsRunning;
+bool heartbeatTimeoutExpired = false; // Should only be changed in heartbeatsWatchdog()
+std::map<std::string, std::array<uint8_t, 1>> revCommonHeartbeatMap;
+std::map<std::string, std::array<uint8_t, 8>> sparkHeartbeatMap;
 auto latestHeartbeatAck = std::chrono::steady_clock::now();
 
 // Only call when holding canDevicesMtx
@@ -667,12 +673,29 @@ void heartbeatsWatchdog() {
 
         auto now = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
-        if (elapsed_seconds.count() > 1) {
-            uint8_t sparkMaxHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            uint8_t revCommonHeartbeat[] = {0};
+        if (elapsed_seconds.count() >= 1 && !heartbeatTimeoutExpired) {
+            // The heartbeat timeout just expired
+            heartbeatTimeoutExpired = true;
+            uint8_t disabledSparkHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+            uint8_t disabledRevCommonHeartbeat[] = {0};
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
-                _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, sparkMaxHeartbeat, 8, -1);
-                _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, revCommonHeartbeat, 1, -1);
+                if (sparkHeartbeatMap.contains(heartbeatsRunning[i])) {
+                    _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, 8, HEARTBEAT_PERIOD_MS);
+                }
+                if (revCommonHeartbeatMap.contains(heartbeatsRunning[i])) {
+                    _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, 1, HEARTBEAT_PERIOD_MS);
+                }
+            }
+        } else if (elapsed_seconds.count() < 1 && heartbeatTimeoutExpired) {
+            // The heartbeat timeout is newly un-expired
+            heartbeatTimeoutExpired = false;
+            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+                if (auto heartbeatEntry = sparkHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != sparkHeartbeatMap.end()) {
+                    _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), 8, HEARTBEAT_PERIOD_MS);
+                }
+                if (auto heartbeatEntry = revCommonHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != revCommonHeartbeatMap.end()) {
+                    _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, heartbeatEntry->second.data(), 1, HEARTBEAT_PERIOD_MS);
+                }
             }
         }
     }
@@ -695,10 +718,11 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
         if (deviceIterator == canDeviceMap.end()) return;
     }
 
-    uint8_t payload[] = {1};
-    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, payload, 1, HEARTBEAT_PERIOD_MS);
+    std::array<uint8_t, 1> payload = {1};
+    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, payload.data(), 1, HEARTBEAT_PERIOD_MS);
 
     std::scoped_lock lock{watchdogMtx};
+    revCommonHeartbeatMap[descriptor] = payload;
 
     if (heartbeatsRunning.size() == 0) {
         heartbeatsRunning.push_back(descriptor);
@@ -721,7 +745,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
     Napi::Array dataParam = info[1].As<Napi::Array>();
 
-    uint8_t heartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+    std::array<uint8_t, 8> heartbeat = {0, 0, 0, 0, 0, 0, 0, 0};
 
     {
         std::scoped_lock lock{canDevicesMtx};
@@ -730,7 +754,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     }
 
     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, -1);
+    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, -1);
 
     int sum = 0;
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
@@ -738,24 +762,20 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         sum+= heartbeat[i];
     }
 
-    if (sum == 0) {
-        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, -1);
-    }
-    else {
-        _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat, 8, HEARTBEAT_PERIOD_MS);
+    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeat.data(), 8, HEARTBEAT_PERIOD_MS);
 
-        std::scoped_lock lock{watchdogMtx};
+    std::scoped_lock lock{watchdogMtx};
+    sparkHeartbeatMap[descriptor] = heartbeat;
 
-        if (heartbeatsRunning.size() == 0) {
-            heartbeatsRunning.push_back(descriptor);
-            latestHeartbeatAck = std::chrono::steady_clock::now();
-            std::thread hb(heartbeatsWatchdog);
-            hb.detach();
-        } else {
-            for(int i = 0; i < heartbeatsRunning.size(); i++) {
-                if (heartbeatsRunning[i].compare(descriptor) == 0) return;
-            }
-            heartbeatsRunning.push_back(descriptor);
+    if (heartbeatsRunning.size() == 0) {
+        heartbeatsRunning.push_back(descriptor);
+        latestHeartbeatAck = std::chrono::steady_clock::now();
+        std::thread hb(heartbeatsWatchdog);
+        hb.detach();
+    } else {
+        for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            if (heartbeatsRunning[i].compare(descriptor) == 0) return;
         }
+        heartbeatsRunning.push_back(descriptor);
     }
 }
