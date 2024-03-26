@@ -627,6 +627,7 @@ void waitForNotifierAlarm(const Napi::CallbackInfo& info) {
     int32_t status;
 
     HAL_UpdateNotifierAlarm(m_notifier, HAL_GetFPGATime(&status) + time, &status);
+    // TODO(Noah): Don't discard the returned value (this function is marked as [nodiscard])
     HAL_WaitForNotifierAlarm(m_notifier, &status);
     cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
 }
