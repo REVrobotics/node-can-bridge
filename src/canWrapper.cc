@@ -682,13 +682,13 @@ void heartbeatsWatchdog() {
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
                 if (sparkHeartbeatMap.contains(heartbeatsRunning[i])) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, 8, -1);
+                    _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, 8, -1);
 
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, 8, HEARTBEAT_PERIOD_MS);
                 }
                 if (revCommonHeartbeatMap.contains(heartbeatsRunning[i])) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, 1, -1);
+                    _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, 1, -1);
 
                     _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, 1, HEARTBEAT_PERIOD_MS);
                 }
@@ -699,13 +699,13 @@ void heartbeatsWatchdog() {
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
                 if (auto heartbeatEntry = sparkHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != sparkHeartbeatMap.end()) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), 8, -1);
+                    _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), 8, -1);
 
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), 8, HEARTBEAT_PERIOD_MS);
                 }
                 if (auto heartbeatEntry = revCommonHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != revCommonHeartbeatMap.end()) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, heartbeatEntry->second.data(), 1, -1);
+                    _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, heartbeatEntry->second.data(), 1, -1);
 
                     _sendCANMessage(heartbeatsRunning[i], REV_COMMON_HEARTBEAT_ID, heartbeatEntry->second.data(), 1, HEARTBEAT_PERIOD_MS);
                 }
