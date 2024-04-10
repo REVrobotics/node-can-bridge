@@ -29,6 +29,8 @@
 
 #define SPARK_HEARTBEAT_LENGTH 8
 #define REV_COMMON_HEARTBEAT_LENGTH 1
+uint8_t disabledSparkHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
+uint8_t disabledRevCommonHeartbeat[] = {0};
 
 rev::usb::CandleWinUSBDriver* driver = new rev::usb::CandleWinUSBDriver();
 
@@ -682,8 +684,6 @@ void heartbeatsWatchdog() {
         if (elapsed_seconds.count() >= 1 && !heartbeatTimeoutExpired) {
             // The heartbeat timeout just expired
             heartbeatTimeoutExpired = true;
-            uint8_t disabledSparkHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
-            uint8_t disabledRevCommonHeartbeat[] = {0};
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
                 if (sparkHeartbeatMap.contains(heartbeatsRunning[i])) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
@@ -803,4 +803,12 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
         }
         heartbeatsRunning.push_back(descriptor);
     }
+}
+
+void stopHeartbeats(const Napi::CallbackInfo& info) {
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    std::scoped_lock lock{watchdogMtx};
+    // Send disabled SPARK and REV common heartbeats and un-schedule them for the future
+    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, SPARK_HEARTBEAT_LENGTH, 0);
+    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, REV_COMMON_HEARTBEAT_LENGTH, 0);
 }

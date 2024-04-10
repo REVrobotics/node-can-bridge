@@ -42,6 +42,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, setSparkMaxHeartbeatData));
     exports.Set(Napi::String::New(env, "startRevCommonHeartbeat"),
                 Napi::Function::New(env, startRevCommonHeartbeat));
+    exports.Set(Napi::String::New(env, "stopHeartbeats"),
+                Napi::Function::New(env, stopHeartbeats));
     exports.Set(Napi::String::New(env, "ackHeartbeats"),
                 Napi::Function::New(env, ackHeartbeats));
     return exports;

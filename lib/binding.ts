@@ -63,6 +63,7 @@ export class CanBridge {
     setThreadPriority: (descriptor: string, priority: ThreadPriority) => void;
     setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void;
     startRevCommonHeartbeat: (descriptor: string) => void;
+    stopHeartbeats: (descriptor: string) => void;
     ackHeartbeats: () => void;
 
     constructor() {
@@ -90,6 +91,7 @@ export class CanBridge {
             this.setSparkMaxHeartbeatData = addon.setSparkMaxHeartbeatData;
             this.startRevCommonHeartbeat = addon.startRevCommonHeartbeat;
             this.ackHeartbeats = addon.ackHeartbeats;
+            this.stopHeartbeats = addon.stopHeartbeats;
         } catch (e: any) {
             throw new CanBridgeInitializationError(e);
         }
