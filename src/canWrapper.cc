@@ -653,20 +653,22 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
     cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
 }
 
+void cleanupHeartbeatsRunning() {
+    // Erase removed CAN buses from heartbeatsRunning
+    std::scoped_lock lock{watchdogMtx, canDevicesMtx};
+    for(int i = 0; i < heartbeatsRunning.size(); i++) {
+        auto deviceIterator = canDeviceMap.find(heartbeatsRunning[i]);
+        if (deviceIterator == canDeviceMap.end()) {
+            heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
+        }
+    }
+}
+
 void heartbeatsWatchdog() {
     while (true) {
         std::this_thread::sleep_for (std::chrono::milliseconds(250));
 
-        {
-            // Erase removed CAN buses from heartbeatsRunning
-            std::scoped_lock lock{watchdogMtx, canDevicesMtx};
-            for(int i = 0; i < heartbeatsRunning.size(); i++) {
-                auto deviceIterator = canDeviceMap.find(heartbeatsRunning[i]);
-                if (deviceIterator == canDeviceMap.end()) {
-                    heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
-                }
-            }
-        }
+        cleanupHeartbeatsRunning();
 
         std::scoped_lock lock{watchdogMtx};
 
