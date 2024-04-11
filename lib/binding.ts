@@ -63,7 +63,7 @@ export class CanBridge {
     setThreadPriority: (descriptor: string, priority: ThreadPriority) => void;
     setSparkMaxHeartbeatData: (descriptor: string, heartbeatData: number[]) => void;
     startRevCommonHeartbeat: (descriptor: string) => void;
-    stopHeartbeats: (descriptor: string) => void;
+    stopHeartbeats: (descriptor: string, sendDisabledHeartbeatsFirst: boolean) => void;
     ackHeartbeats: () => void;
 
     constructor() {

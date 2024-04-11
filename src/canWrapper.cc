@@ -807,8 +807,13 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
 
 void stopHeartbeats(const Napi::CallbackInfo& info) {
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    bool sendDisabledHeartbeatsFirst = info[1].As<Napi::Boolean>().Value();
+
+    // 0 sends and then cancels, -1 cancels without sending
+    const int repeatPeriod = sendDisabledHeartbeatsFirst ? 0 : -1;
+
     std::scoped_lock lock{watchdogMtx};
     // Send disabled SPARK and REV common heartbeats and un-schedule them for the future
-    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, SPARK_HEARTBEAT_LENGTH, 0);
-    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, REV_COMMON_HEARTBEAT_LENGTH, 0);
+    _sendCANMessage(descriptor, SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, SPARK_HEARTBEAT_LENGTH, repeatPeriod);
+    _sendCANMessage(descriptor, REV_COMMON_HEARTBEAT_ID, disabledRevCommonHeartbeat, REV_COMMON_HEARTBEAT_LENGTH, repeatPeriod);
 }
