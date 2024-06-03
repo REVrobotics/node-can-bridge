@@ -37,6 +37,10 @@
             'RuntimeLibrary': 0
         },
       },
+      "xcode_settings": {
+          "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
+          "OTHER_CPLUSPLUSFLAGS": ["-fexceptions"]
+      },
       "cflags_cc!": ["-std=c++20", '-fno-exceptions'],
       "cflags!": ["-std=c++20", '-fno-exceptions'],
     }
