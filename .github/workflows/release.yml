@@ -1,0 +1,41 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    name: "Build - ${{ matrix.os }}"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build
+      run: npm run build
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        tag_name: ${{ github.ref }}
+        name: ${{ github.ref }}
+        body: |
+          This is a release for version ${{ github.ref }}.
+          It contains the compiled files from the build process.
