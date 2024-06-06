@@ -24,6 +24,13 @@ jobs:
       with:
         node-version: '20'
 
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install Python setup tools
+      run: |
+          pip install setuptools
+
     - name: Install dependencies
       run: npm install
 
