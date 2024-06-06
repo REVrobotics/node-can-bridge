@@ -11,10 +11,11 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    name: "Build - ${{ matrix.os }}"
+    name: "Release - ${{ matrix.os }}"
 
     steps:
     - uses: actions/checkout@v4
