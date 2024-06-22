@@ -54,9 +54,9 @@ try {
     }
     process.exit(1);
 } finally {
-    if (fs.existsSync(tempDir)) {
-        fs.rmSync(tempDir, { recursive: true, force: true});
-    }
+    //if (fs.existsSync(tempDir)) {
+    //    fs.rmSync(tempDir, { recursive: true, force: true});
+    //}
 }
 
 /**
@@ -66,6 +66,9 @@ try {
  */
 function moveCompileTimeDeps() {
     console.log("Moving external compile time dependencies to correct directories");
+    if (!fs.existsSync(externalCompileTimeDepsPath)) {
+        fs.mkdirSync(externalCompileTimeDepsPath, { recursive: true });
+    }
     if (platform() === 'win32') {
         const deps = ['CANBridge.lib', 'wpiHal.lib', 'wpiutil.lib'];
         deps.forEach(dep => moveExternalCompileTimeDeps(path.join('win32-x64', dep)));
@@ -95,24 +98,31 @@ function moveCompileTimeDeps() {
  */
 function moveRuntimeDeps() {
     console.log("Moving artifacts to correct directories");
+    if (!fs.existsSync('prebuilds')) {
+        fs.mkdirSync('prebuilds', { recursive: true });
+    }
     if (platform() === 'win32') {
         const deps = ['CANBridge.dll', 'wpiHal.dll', 'wpiutil.dll'];
         deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('win32-x64', dep), runtimeArtifactsPath.win));
     } else if (platform() === 'darwin') {
         const deps = ['libCANBridge.dylib', 'libwpiHal.dylib', 'libwpiutil.dylib'];
-        const archDepMap = {
-            x64: runtimeArtifactsPath.osx,
-            arm64: runtimeArtifactsPath.osxArm
-        };
-        deps.forEach(dep => moveRuntimeArtifactsDeps(path.join(archDepMap[arch()], dep), archDepMap[arch()]));
+        if (arch() === 'x64') {
+            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-x64', dep), runtimeArtifactsPath.osx));
+        }
+        if (arch() === 'arm64') {
+            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-arm64', dep), runtimeArtifactsPath.osxArm));
+        }
     } else if (platform() === 'linux') {
         const deps = ['libCANBridge.so', 'libwpiHal.so', 'libwpiutil.so'];
-        const archDepMap = {
-            x64: runtimeArtifactsPath.linux,
-            arm64: runtimeArtifactsPath.linuxArm,
-            arm: runtimeArtifactsPath.linuxArm32
-        };
-        deps.forEach(dep => moveRuntimeArtifactsDeps(path.join(archDepMap[arch()], dep), archDepMap[arch()]));
+        if (arch() === 'x64') {
+            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('linux-x64', dep), runtimeArtifactsPath.linux));
+        }
+        if (arch() === 'arm64') {
+            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('linux-arm64', dep), runtimeArtifactsPath.linuxArm));
+        }
+        if (arch() === 'arm') {
+            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('linux-arm32', dep), runtimeArtifactsPath.linuxArm32));
+        }
     }
     console.log("CANBridge artifacts moved to correct directories");
 }
