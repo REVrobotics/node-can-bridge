@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    name: "Release - ${{ matrix.os }}"
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    - name: Install Python setup tools
+      run: |
+          pip install setuptools
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Build
+      run: npm run build
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/*
+        tag_name: ${{ github.ref }}
+        name: ${{ github.ref }}
+        body: |
+          This is a release for version ${{ github.ref }}.
+          It contains the compiled files from the build process.
