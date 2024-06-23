@@ -66,8 +66,8 @@
           "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
           "OTHER_CPLUSPLUSFLAGS": ["-fexceptions"]
       },
-      "cflags_cc!": ["-std=c++20", '-fno-exceptions'],
-      "cflags!": ["-std=c++20", '-fno-exceptions'],
+      "cflags_cc": ["-std=c++20", '-fexceptions'],
+      "cflags": ["-std=c++20", '-fexceptions'],
     }
   ]
 }
