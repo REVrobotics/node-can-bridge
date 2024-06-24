@@ -239,7 +239,7 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
     size_t messageSize = message->GetSize();
     const uint8_t* messageData = message->GetData();
     Napi::Array napiMessage = Napi::Array::New(env, messageSize);
-    for (int i = 0; i < messageSize; i++) {
+    for (size_t i = 0; i < messageSize; i++) {
         napiMessage[i] =  messageData[i];
     }
     Napi::Object messageInfo = Napi::Object::New(env);
@@ -332,7 +332,7 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
     try {
         rev::usb::CANStatus status = device->OpenStreamSession(&sessionHandle, filter, maxSize);
         if (status != rev::usb::CANStatus::kOk) {
-            Napi::Error::New(env, "Opening stream session failed with error code "+(int)status).ThrowAsJavaScriptException();
+            Napi::Error::New(env, "Opening stream session failed with error code "+std::to_string((int)status)).ThrowAsJavaScriptException();
         } else {
             return Napi::Number::New(env, sessionHandle);
         }
@@ -661,7 +661,7 @@ void heartbeatsWatchdog() {
         {
             // Erase removed CAN buses from heartbeatsRunning
             std::scoped_lock lock{watchdogMtx, canDevicesMtx};
-            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            for(size_t i = 0; i < heartbeatsRunning.size(); i++) {
                 auto deviceIterator = canDeviceMap.find(heartbeatsRunning[i]);
                 if (deviceIterator == canDeviceMap.end()) {
                     heartbeatsRunning.erase(heartbeatsRunning.begin() + i);
@@ -678,7 +678,7 @@ void heartbeatsWatchdog() {
         if (elapsed_seconds.count() > 1) {
             uint8_t sparkMaxHeartbeat[] = {0, 0, 0, 0, 0, 0, 0, 0};
             uint8_t revCommonHeartbeat[] = {0};
-            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            for(size_t i = 0; i < heartbeatsRunning.size(); i++) {
                 _sendCANMessage(heartbeatsRunning[i], 0x2052C80, sparkMaxHeartbeat, 8, -1);
                 _sendCANMessage(heartbeatsRunning[i], 0x00502C0, revCommonHeartbeat, 1, -1);
             }
@@ -714,7 +714,7 @@ void startRevCommonHeartbeat(const Napi::CallbackInfo& info) {
         std::thread hb(heartbeatsWatchdog);
         hb.detach();
     } else {
-        for(int i = 0; i < heartbeatsRunning.size(); i++) {
+        for(size_t i = 0; i < heartbeatsRunning.size(); i++) {
             if (heartbeatsRunning[i].compare(descriptor) == 0) return;
         }
         heartbeatsRunning.push_back(descriptor);
@@ -760,7 +760,7 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
             std::thread hb(heartbeatsWatchdog);
             hb.detach();
         } else {
-            for(int i = 0; i < heartbeatsRunning.size(); i++) {
+            for(size_t i = 0; i < heartbeatsRunning.size(); i++) {
                 if (heartbeatsRunning[i].compare(descriptor) == 0) return;
             }
             heartbeatsRunning.push_back(descriptor);
