@@ -106,12 +106,7 @@ function moveRuntimeDeps() {
         deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('win32-x64', dep), runtimeArtifactsPath.win));
     } else if (platform() === 'darwin') {
         const deps = ['libCANBridge.dylib', 'libwpiHal.dylib', 'libwpiutil.dylib'];
-        if (arch() === 'x64') {
-            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-x64', dep), runtimeArtifactsPath.osx));
-        }
-        if (arch() === 'arm64') {
-            deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-arm64', dep), runtimeArtifactsPath.osxArm));
-        }
+        deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-x64', dep), runtimeArtifactsPath.osx));
     } else if (platform() === 'linux') {
         const deps = ['libCANBridge.so', 'libwpiHal.so', 'libwpiutil.so'];
         if (arch() === 'x64') {
