@@ -24,9 +24,9 @@
         "typescript": "^5.0.2"
     },
     "scripts": {
-        "install": "node-gyp-build \"node scripts/download-CanBridge.mjs\"",
+        "install": "node scripts/download-CanBridge.mjs && node-gyp rebuild",
         "prepublishOnly": "node scripts/download-CanBridge.mjs && tsc && prebuildify --napi",
-        "pretest": "node-gyp-build && tsc",
+        "pretest": "node-gyp rebuild && tsc",
         "test": "node --napi-modules test/test_binding.js"
     },
     "engines": {
