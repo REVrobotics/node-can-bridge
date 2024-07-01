@@ -768,3 +768,11 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info) {
     }
 }
 
+/**
+ * This function was removed from commit b0ca096624286b1e975eaaa816e38599933b7e84, which broke MSVC builds.
+ * It has been re-added here to fix the build.
+ */
+void stopHeartbeats(const Napi::CallbackInfo& info) {
+    //! TODO: Reimplement this function with current codebase
+    Napi::Env env = info.Env();
+}
