@@ -25,9 +25,9 @@
                 'destination': './build/Release',
                 'files': [
                     # These files were placed in the prebuilds folder by download-CanBridge.mjs
-                    '<(module_root_dir)/prebuilds/darwin-x64/libCANBridge.dylib',
-                    '<(module_root_dir)/prebuilds/darwin-x64/libwpiHal.dylib',
-                    '<(module_root_dir)/prebuilds/darwin-x64/libwpiutil.dylib',
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libCANBridge.dylib',
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libwpiHal.dylib',
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libwpiutil.dylib',
                 ]
             }],
         }],
