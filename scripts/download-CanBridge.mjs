@@ -4,14 +4,13 @@ import axios from 'axios';
 import AdmZip from 'adm-zip';
 import { platform, arch } from 'os';
 
-const canBridgeTag = "v2.3.1";
+const canBridgeTag = "v2.3.2";
 const canBridgeReleaseAssetUrlPrefix = `https://github.com/unofficial-rev-port/CANBridge/releases/download/${canBridgeTag}`;
 
 const externalCompileTimeDepsPath = 'externalCompileTimeDeps';
 const runtimeArtifactsPath = {
     win: 'prebuilds/win32-x64',
-    osx: 'prebuilds/darwin-x64',
-    osxArm: 'prebuilds/darwin-arm64',
+    osx: 'prebuilds/darwin-osxuniversal',
     linux: 'prebuilds/linux-x64',
     linuxArm: 'prebuilds/linux-arm64',
     linuxArm32: 'prebuilds/linux-arm32'
@@ -21,11 +20,10 @@ const tempDir = 'temp';
 try {
     // TODO: Do not hardcode the filenames, instead get them from the GitHub API -> Look at Octokit: https://github.com/octokit/octokit.js
     await Promise.all([
-        'CANBridge-linuxarm32-LinuxARM32.zip',
-        'CANBridge-linuxarm64-LinuxARM64.zip',
+        'CANBridge-linuxarm32.zip',
+        'CANBridge-linuxarm64.zip',
         'CANBridge-linuxx86-64-Linux64.zip',
-        'CANBridge-osxuniversal-MacOS64.zip',
-        'CANBridge-osxuniversal-MacOSARM64.zip',
+        'CANBridge-osxuniversal-macOS.zip',
         'CANBridge-windowsx86-64-Win64.zip',
         'headers.zip'
     ].map(filename => downloadCanBridgeArtifact(filename)));
@@ -74,11 +72,7 @@ function moveCompileTimeDeps() {
         deps.forEach(dep => moveExternalCompileTimeDeps(path.join('win32-x64', dep)));
     } else if (platform() === 'darwin') {
         const deps = ['libCANBridge.a'];
-        const archDepMap = {
-            x64: 'darwin-x64',
-            arm64: 'darwin-arm64'
-        };
-        deps.forEach(dep => moveExternalCompileTimeDeps(path.join(archDepMap[arch()], dep)));
+        deps.forEach(dep => moveExternalCompileTimeDeps(path.join('darwin-osxuniversal', dep)));
     } else if (platform() === 'linux') {
         const deps = ['libCANBridge.a'];
         const archDepMap = {
@@ -106,7 +100,7 @@ function moveRuntimeDeps() {
         deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('win32-x64', dep), runtimeArtifactsPath.win));
     } else if (platform() === 'darwin') {
         const deps = ['libCANBridge.dylib', 'libwpiHal.dylib', 'libwpiutil.dylib'];
-        deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-x64', dep), runtimeArtifactsPath.osx));
+        deps.forEach(dep => moveRuntimeArtifactsDeps(path.join('darwin-osxuniversal', dep), runtimeArtifactsPath.osx));
     } else if (platform() === 'linux') {
         const deps = ['libCANBridge.so', 'libwpiHal.so', 'libwpiutil.so'];
         if (arch() === 'x64') {
@@ -150,8 +144,7 @@ async function unzipCanBridgeArtifact(filename, destDir) {
     if (filename.includes('linuxarm32')) filepath = "linux-arm32";
     else if (filename.includes('linuxarm64')) filepath = "linux-arm64";
     else if (filename.includes('linuxx86-64')) filepath = "linux-x64";
-    else if (filename.includes('MacOS64')) filepath = "darwin-x64";
-    else if (filename.includes('MacOSARM64')) filepath = "darwin-arm64";
+    else if (filename.includes('osxuniversal')) filepath = "darwin-osxuniversal";
     else if (filename.includes('windowsx86-64')) filepath = "win32-x64";
     zip.extractAllTo(`${destDir}/${filepath}`);
 }
