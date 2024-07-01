@@ -73,7 +73,10 @@
       },
       "xcode_settings": {
           "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
-          "OTHER_CPLUSPLUSFLAGS": ["-fexceptions"]
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+          'GCC_ENABLE_CPP_RTTI': 'YES',
+          "OTHER_CPLUSPLUSFLAGS": ["-fexceptions"],
+          # 'MACOSX_DEPLOYMENT_TARGET': '14.0',
       },
       "cflags_cc": ["-std=c++20", '-fexceptions'],
       "cflags": ["-std=c++20", '-fexceptions'],
