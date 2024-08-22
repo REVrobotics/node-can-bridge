@@ -4,10 +4,12 @@ const assert = require("assert").strict;
 
 let devices = [];
 
+const canBridge = new addon.CanBridge();
+
 async function testGetDevices() {
-    assert(addon.getDevices, "getDevices is undefined");
+    assert(canBridge.getDevices, "getDevices is undefined");
     try {
-        devices = await addon.getDevices();
+        devices = await canBridge.getDevices();
         console.log(devices);
         console.log(`Found ${devices.length} device(s)`);
         devices.forEach((device) => {
@@ -23,19 +25,19 @@ async function testGetDevices() {
 
 async function testConcurrentGetDevices() {
     try {
-        await Promise.all([addon.getDevices(), addon.getDevices(), addon.getDevices(),
-            addon.getDevices(), addon.getDevices(), addon.getDevices()]);
+        await Promise.all([canBridge.getDevices(), canBridge.getDevices(), canBridge.getDevices(),
+            canBridge.getDevices(), canBridge.getDevices(), canBridge.getDevices()]);
     } catch(error) {
         assert.fail(error.toString());
     }
 }
 
 async function testRegisterDeviceToHAL() {
-    assert(addon.registerDeviceToHAL, "registerDeviceToHAL is undefined");
+    assert(canBridge.registerDeviceToHAL, "registerDeviceToHAL is undefined");
     try {
         if (devices.length > 0) {
             console.log(`Registering device ${devices[0].descriptor} to HAL`);
-            const status = addon.registerDeviceToHAL(devices[0].descriptor, 0, 0);
+            const status = canBridge.registerDeviceToHAL(devices[0].descriptor, 0, 0);
             console.log(`Device registered with status code ${status}`);
             assert.equal(status, 0, "Registering device failed");
         }
@@ -46,12 +48,12 @@ async function testRegisterDeviceToHAL() {
 }
 
 async function testUnregisterDeviceFromHAL() {
-    assert(addon.unregisterDeviceFromHAL, "unregisterDeviceFromHAL is undefined");
+    assert(canBridge.unregisterDeviceFromHAL, "unregisterDeviceFromHAL is undefined");
 
     try {
         if (devices.length > 0) {
             console.log(`Unregistering device ${devices[0].descriptor} from HAL`);
-            const status = await addon.unregisterDeviceFromHAL(devices[0].descriptor);
+            const status = await canBridge.unregisterDeviceFromHAL(devices[0].descriptor);
             console.log(`Device unregistered with status code ${status}`);
             assert.equal(status, 0, "unregisterDeviceFromHAL device failed");
         }
@@ -61,11 +63,11 @@ async function testUnregisterDeviceFromHAL() {
 }
 
 async function testReceiveMessage() {
-    assert(addon.receiveMessage, "receiveMessage is undefined");
+    assert(canBridge.receiveMessage, "receiveMessage is undefined");
     try {
         if (devices.length ===  0) return;
         await new Promise(resolve=>{setTimeout(resolve, 200)});
-        const message = addon.receiveMessage(devices[0].descriptor, 0, 0);
+        const message = canBridge.receiveMessage(devices[0].descriptor, 0, 0);
         console.log("Got message", message);
     } catch(error) {
         assert.fail(error);
@@ -73,10 +75,10 @@ async function testReceiveMessage() {
 }
 
 async function testOpenStreamSession() {
-    assert(addon.openStreamSession, "openStreamSession is undefined");
+    assert(canBridge.openStreamSession, "openStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const sessionHandle = addon.openStreamSession(devices[0].descriptor, 0, 0, 4);
+        const sessionHandle = canBridge.openStreamSession(devices[0].descriptor, 0, 0, 4);
         console.log("Started stream session with handle", sessionHandle);
         return sessionHandle;
     } catch(error) {
@@ -85,11 +87,11 @@ async function testOpenStreamSession() {
 }
 
 async function testReadStreamSession(sessionHandle) {
-    assert(addon.readStreamSession, "readStreamSession is undefined");
+    assert(canBridge.readStreamSession, "readStreamSession is undefined");
     if (devices.length === 0) return;
     try {
         await new Promise(resolve => {setTimeout(resolve, 200)});
-        const data = addon.readStreamSession(devices[0].descriptor, sessionHandle, 4);
+        const data = canBridge.readStreamSession(devices[0].descriptor, sessionHandle, 4);
         console.log("Got stream:", data);
         return sessionHandle;
     } catch (error) {
@@ -98,10 +100,10 @@ async function testReadStreamSession(sessionHandle) {
 }
 
 async function testCloseStreamSession(sessionHandle) {
-    assert(addon.closeStreamSession, "closeStreamSession is undefined");
+    assert(canBridge.closeStreamSession, "closeStreamSession is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = addon.closeStreamSession(devices[0].descriptor, sessionHandle);
+        const status = canBridge.closeStreamSession(devices[0].descriptor, sessionHandle);
         assert.equal(status, 0, "Closing stream failed");
     } catch(error) {
         assert.fail(error);
@@ -109,10 +111,10 @@ async function testCloseStreamSession(sessionHandle) {
 }
 
 async function testGetCANDetailStatus() {
-    assert(addon.getCANDetailStatus, "getCANDetailStatus is undefined");
+    assert(canBridge.getCANDetailStatus, "getCANDetailStatus is undefined");
     try {
         if (devices.length ===  0) return;
-        const status = addon.getCANDetailStatus(devices[0].descriptor);
+        const status = canBridge.getCANDetailStatus(devices[0].descriptor);
         console.log("CAN Status:", status);
     } catch(error) {
         assert.fail(error);
@@ -120,11 +122,11 @@ async function testGetCANDetailStatus() {
 }
 
 async function testSendCANMessage() {
-    assert(addon.sendCANMessage, "sendCANMessage is undefined");
+    assert(canBridge.sendCANMessage, "sendCANMessage is undefined");
     try {
         if (devices.length ===  0) return;
         // Send identify to SparkMax #1
-        const status = addon.sendCANMessage(devices[0].descriptor, 0x2051D81, [], 0);
+        const status = canBridge.sendCANMessage(devices[0].descriptor, 0x2051D81, [], 0);
         console.log("CAN Status:", status);
     } catch(error) {
         assert.fail(error);
@@ -132,11 +134,11 @@ async function testSendCANMessage() {
 }
 
 async function testSendHALMessage() {
-    assert(addon.sendCANMessage, "sendCANMessage is undefined");
+    assert(canBridge.sendCANMessage, "sendCANMessage is undefined");
     try {
         if (devices.length ===  0) return;
         // Send identify to SparkMax #1
-        const status = addon.sendHALMessage(0x2051D81, [], 500);
+        const status = canBridge.sendHALMessage(0x2051D81, [], 500);
         await new Promise(resolve => {setTimeout(resolve, 2000)});
         console.log("Status:", status);
     } catch(error) {
@@ -145,10 +147,10 @@ async function testSendHALMessage() {
 }
 
 async function testSetThreadPriority() {
-    assert(addon.setThreadPriority, "setThreadPriority is undefined");
+    assert(canBridge.setThreadPriority, "setThreadPriority is undefined");
     try {
         if (devices.length ===  0) return;
-        addon.setThreadPriority(devices[0].descriptor, 4);
+        canBridge.setThreadPriority(devices[0].descriptor, 4);
     } catch(error) {
         assert.fail(error);
     }
@@ -156,7 +158,7 @@ async function testSetThreadPriority() {
 
 function testInitializeNotifier() {
     try {
-        addon.initializeNotifier();
+        canBridge.initializeNotifier();
     } catch(error) {
         assert.fail(error);
     }
@@ -165,7 +167,7 @@ function testInitializeNotifier() {
 async function testWaitForNotifierAlarm() {
     try {
         const start = Date.now();
-        await addon.waitForNotifierAlarm(1000);
+        await canBridge.waitForNotifierAlarm(1000);
         console.log("Time passed:", Date.now() - start);
     } catch(error) {
         assert.fail(error);
@@ -174,7 +176,7 @@ async function testWaitForNotifierAlarm() {
 
 function testStopNotifier() {
     try {
-        addon.stopNotifier();
+        canBridge.stopNotifier();
     } catch(error) {
         assert.fail(error);
     }
@@ -182,7 +184,7 @@ function testStopNotifier() {
 
 async function testOpenHALStreamSession() {
     try {
-        const handle = addon.openHALStreamSession(0, 0, 8);
+        const handle = canBridge.openHALStreamSession(0, 0, 8);
         return handle;
     } catch(error) {
         assert.fail(error);
@@ -192,7 +194,7 @@ async function testOpenHALStreamSession() {
 async function testReadHALStreamSession(handle) {
     try {
         await new Promise(resolve => {setTimeout(resolve, 200)});
-        const data = addon.readHALStreamSession(handle, 8);
+        const data = canBridge.readHALStreamSession(handle, 8);
         console.log("Got stream from HAL:", data);
         return handle;
     } catch(error) {
@@ -202,7 +204,7 @@ async function testReadHALStreamSession(handle) {
 
 async function testCloseHALStreamSession(handle) {
     try {
-        addon.closeHALStreamSession(handle);
+        canBridge.closeHALStreamSession(handle);
         console.log("Closed HAL stream");
     } catch(error) {
         assert.fail(error);
@@ -212,13 +214,13 @@ async function testCloseHALStreamSession(handle) {
 async function testHeartbeat() {
     try {
         if (devices.length ===  0) return;
-        await addon.sendCANMessage(devices[0].descriptor, 33882241, [10, 215, 163, 60, 0, 0, 0, 0], 0);
-        await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0xFF));
-        const interval = setInterval(addon.ackSparkMaxHeartbeat, 900);
+        await canBridge.sendCANMessage(devices[0].descriptor, 33882241, [10, 215, 163, 60, 0, 0, 0, 0], 0);
+        await canBridge.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0xFF));
+        const interval = setInterval(canBridge.ackSparkMaxHeartbeat, 900);
         await new Promise(resolve => {setTimeout(resolve, 6000)});
         clearInterval(interval);
         console.log("STOPPING");
-        await addon.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0x00));
+        await canBridge.setSparkMaxHeartbeatData(devices[0].descriptor, Array(8).fill(0x00));
         await new Promise(resolve => {setTimeout(resolve, 2000)});
     } catch(error) {
         assert.fail(error);
