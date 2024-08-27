@@ -5,7 +5,7 @@
       'sources': [
         'src/addon.cc',
         'src/canWrapper.cc',
-       ],
+      ],
       'include_dirs': [
         "src/",
         "externalCompileTimeDeps/include",
@@ -15,21 +15,55 @@
         "NAPI_VERSION=<(napi_build_version)"
       ],
       'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
-      'libraries': [
-            # These files were placed by download-CanBridge.mjs
-            '<(module_root_dir)/externalCompileTimeDeps/CANBridge.lib',
-            '<(module_root_dir)/externalCompileTimeDeps/wpiHal.lib',
-            '<(module_root_dir)/externalCompileTimeDeps/wpiutil.lib',
+      'conditions': [
+        ['OS=="mac"', {
+            'libraries': [
+                # These files were placed by download-CanBridge.mjs
+                '<(module_root_dir)/externalCompileTimeDeps/libCANBridge.a',
+            ],
+            'copies': [{
+                'destination': './build/Release',
+                'files': [
+                    # These files were placed in the prebuilds folder by download-CanBridge.mjs
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libCANBridge.dylib',
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libwpiHal.dylib',
+                    '<(module_root_dir)/prebuilds/darwin-osxuniversal/libwpiutil.dylib',
+                ]
+            }],
+        }],
+        ['OS=="win"', {
+            'libraries': [
+                # These files were placed by download-CanBridge.mjs
+                '<(module_root_dir)/externalCompileTimeDeps/CANBridge.lib',
+                '<(module_root_dir)/externalCompileTimeDeps/wpiHal.lib',
+                '<(module_root_dir)/externalCompileTimeDeps/wpiutil.lib',
+            ],
+            'copies': [{
+                'destination': './build/Release',
+                'files': [
+                    # These files were placed in the prebuilds folder by download-CanBridge.mjs
+                    '<(module_root_dir)/prebuilds/win32-x64/CANBridge.dll',
+                    '<(module_root_dir)/prebuilds/win32-x64/wpiHal.dll',
+                    '<(module_root_dir)/prebuilds/win32-x64/wpiutil.dll',
+                ]
+            }],
+        }],
+        ['OS=="linux"', {
+            'libraries': [
+                # These files were placed by download-CanBridge.mjs
+                '<(module_root_dir)/externalCompileTimeDeps/libCANBridge.a',
+            ],
+            'copies': [{
+                'destination': './build/Release',
+                'files': [
+                    # These files were placed in the prebuilds folder by download-CanBridge.mjs
+                    '<(module_root_dir)/prebuilds/linux-x64/libCANBridge.so',
+                    '<(module_root_dir)/prebuilds/linux-x64/libwpiHal.so',
+                    '<(module_root_dir)/prebuilds/linux-x64/libwpiutil.so',
+                ]
+            }],
+        }],
       ],
-      'copies': [{
-        'destination': './build/Release',
-        'files': [
-          # These files were placed in the prebuilds folder by download-CanBridge.mjs
-          '<(module_root_dir)/prebuilds/win32-x64/CANBridge.dll',
-          '<(module_root_dir)/prebuilds/win32-x64/wpiHal.dll',
-          '<(module_root_dir)/prebuilds/win32-x64/wpiutil.dll',
-        ]
-      }],
       'msvs_settings': {
         'VCCLCompilerTool': {
             'ExceptionHandling': 1,
@@ -37,8 +71,15 @@
             'RuntimeLibrary': 0
         },
       },
-      "cflags_cc!": ["-std=c++20", '-fno-exceptions'],
-      "cflags!": ["-std=c++20", '-fno-exceptions'],
+      "xcode_settings": {
+          "CLANG_CXX_LANGUAGE_STANDARD": "c++20",
+          'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
+          'GCC_ENABLE_CPP_RTTI': 'YES',
+          "OTHER_CPLUSPLUSFLAGS": ["-fexceptions"],
+          # 'MACOSX_DEPLOYMENT_TARGET': '14.0',
+      },
+      "cflags_cc": ["-std=c++20", '-fexceptions'],
+      "cflags": ["-std=c++20", '-fexceptions'],
     }
   ]
 }
