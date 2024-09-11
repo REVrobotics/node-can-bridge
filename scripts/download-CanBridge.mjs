@@ -26,7 +26,7 @@ try {
 
     const headersZip = new AdmZip(path.join(tempDir, "headers.zip"));
 
-    await headersZip.extractAllTo(path.join(externalCompileTimeDepsPath, 'include'));
+    await headersZip.extractAllTo(path.join(externalCompileTimeDepsPath, 'include'), true);
 } catch (e) {
     if (axios.isAxiosError(e) && e.request) {
         console.error(`Failed to download CANBridge file ${e.request.protocol}//${e.request.host}/${e.request.path}`);
