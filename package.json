@@ -1,6 +1,6 @@
 {
     "name": "@rev-robotics/can-bridge",
-    "version": "3.2.0",
+    "version": "3.3.0",
     "author": "REV Robotics",
     "description": "Access CAN Data from a USB device in Node.js",
     "license": "MIT",
