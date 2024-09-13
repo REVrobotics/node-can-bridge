@@ -3,7 +3,7 @@ import * as path from "path";
 import axios from 'axios';
 import AdmZip from 'adm-zip';
 
-const canBridgeTag = "v2.3.0";
+const canBridgeTag = "v2.4.0";
 const canBridgeReleaseAssetUrlPrefix = `https://github.com/REVrobotics/CANBridge/releases/download/${canBridgeTag}`;
 
 const externalCompileTimeDepsPath = 'externalCompileTimeDeps';
@@ -26,7 +26,8 @@ try {
 
     const headersZip = new AdmZip(path.join(tempDir, "headers.zip"));
 
-    await headersZip.extractAllTo(path.join(externalCompileTimeDepsPath, 'include'));
+    await headersZip.extractAllTo(path.join(externalCompileTimeDepsPath, 'include'), true);
+    console.log(`Successfully downloaded CANBridge`);
 } catch (e) {
     if (axios.isAxiosError(e) && e.request) {
         console.error(`Failed to download CANBridge file ${e.request.protocol}//${e.request.host}/${e.request.path}`);
