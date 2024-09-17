@@ -45,10 +45,10 @@ std::map<std::string, std::shared_ptr<rev::usb::CANDevice>> canDeviceMap;
 std::mutex watchdogMtx;
 // These values should only be accessed while holding watchdogMtx
 std::vector<std::string> heartbeatsRunning;
-bool heartbeatTimeoutExpired = false; // Should only be changed in heartbeatsWatchdog()
+bool heartbeatTimeoutExpired = true; // Should only be changed in heartbeatsWatchdog()
 std::map<std::string, std::array<uint8_t, REV_COMMON_HEARTBEAT_LENGTH>> revCommonHeartbeatMap;
 std::map<std::string, std::array<uint8_t, SPARK_HEARTBEAT_LENGTH>> sparkHeartbeatMap;
-auto latestHeartbeatAck = std::chrono::steady_clock::now();
+auto latestHeartbeatAck = std::chrono::time_point<std::chrono::steady_clock>();
 
 // Only call when holding canDevicesMtx
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
