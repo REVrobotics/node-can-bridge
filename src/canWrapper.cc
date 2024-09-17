@@ -681,15 +681,16 @@ void heartbeatsWatchdog() {
 
         auto now = std::chrono::steady_clock::now();
         std::chrono::duration<double> elapsed_seconds = now-latestHeartbeatAck;
+        std::cout << "heartbeatsWatchdog() elapsed_seconds=" << elapsed_seconds << " heartbeatTimeoutExpired=" << heartbeatTimeoutExpired << std::endl;
         if (elapsed_seconds.count() >= 1 && !heartbeatTimeoutExpired) {
             // The heartbeat timeout just expired
             heartbeatTimeoutExpired = true;
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
                 if (sparkHeartbeatMap.contains(heartbeatsRunning[i])) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    std::cout << "Canceling SPARK heartbeat from heartbeatsWatchdog()" << std::endl;
+                    std::cout << "Canceling SPARK heartbeat from heartbeatsWatchdog() because the watchdog timeout has expired" << std::endl;
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, SPARK_HEARTBEAT_LENGTH, -1);
-                    std::cout << "Scheduling SPARK heartbeat" << std::endl;
+                    std::cout << "Scheduling disabled SPARK heartbeat" << std::endl;
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, disabledSparkHeartbeat, SPARK_HEARTBEAT_LENGTH, HEARTBEAT_PERIOD_MS);
                 }
                 if (revCommonHeartbeatMap.contains(heartbeatsRunning[i])) {
@@ -705,10 +706,10 @@ void heartbeatsWatchdog() {
             for(int i = 0; i < heartbeatsRunning.size(); i++) {
                 if (auto heartbeatEntry = sparkHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != sparkHeartbeatMap.end()) {
                     // Clear the scheduled heartbeat that has outdated data so that the updated one gets sent out immediately
-                    std::cout << "Canceling SPARK heartbeat from heartbeatsWatchdog()" << std::endl;
+                    std::cout << "Canceling SPARK heartbeat from heartbeatsWatchdog() because the heartbeat timeout is no longer expired" << std::endl;
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), SPARK_HEARTBEAT_LENGTH, -1);
 
-                    std::cout << "Scheduling SPARK heartbeat" << std::endl;
+                    std::cout << "Scheduling normal SPARK heartbeat" << std::endl;
                     _sendCANMessage(heartbeatsRunning[i], SPARK_HEARTBEAT_ID, heartbeatEntry->second.data(), SPARK_HEARTBEAT_LENGTH, HEARTBEAT_PERIOD_MS);
                 }
                 if (auto heartbeatEntry = revCommonHeartbeatMap.find(heartbeatsRunning[i]); heartbeatEntry != revCommonHeartbeatMap.end()) {
