@@ -21,13 +21,12 @@ try {
         downloadCanBridgeArtifact('headers.zip', tempDir),
     ));
 
-    console.log("CANBridge download completed");
     console.log("Extracting headers");
 
     const headersZip = new AdmZip(path.join(tempDir, "headers.zip"));
 
     await headersZip.extractAllTo(path.join(externalCompileTimeDepsPath, 'include'), true);
-    console.log(`Successfully downloaded CANBridge`);
+    console.log(`Successfully downloaded CANBridge ${canBridgeTag}`);
 } catch (e) {
     if (axios.isAxiosError(e) && e.request) {
         console.error(`Failed to download CANBridge file ${e.request.protocol}//${e.request.host}/${e.request.path}`);
