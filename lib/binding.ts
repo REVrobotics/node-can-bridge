@@ -33,6 +33,8 @@ export enum ThreadPriority {
     PriorityError
 }
 
+export const RTR_FRAME_BIT = 0x80000000;
+
 export class CanBridgeInitializationError extends Error {
     cause: any;
 
