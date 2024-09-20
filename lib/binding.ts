@@ -33,6 +33,7 @@ export enum ThreadPriority {
     PriorityError
 }
 
+// Needs to match HAL_CAN_IS_FRAME_REMOTE
 export const RTR_FRAME_BIT = 0x80000000;
 
 export class CanBridgeInitializationError extends Error {
