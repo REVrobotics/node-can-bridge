@@ -49,7 +49,7 @@ export class CanBridge {
     getDevices: () => Promise<CanDeviceInfo[]>;
     registerDeviceToHAL: (descriptor:string, messageId:Number, messageMask:number) => number;
     unregisterDeviceFromHAL: (descriptor:string) => Promise<number>;
-    receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage;
+    receiveMessage: (descriptor:string, messageId:number, messageMask:number) => CanMessage | undefined;
     openStreamSession: (descriptor:string, messageId:number, messageMask:number, maxSize:number) => number;
     readStreamSession: (descriptor:string, sessionHandle:number, messagesToRead:number) => CanMessage[];
     closeStreamSession: (descriptor:string, sessionHandle:number) => number;

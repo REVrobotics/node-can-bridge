@@ -235,6 +235,10 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
 
     rev::usb::CANStatus status = device->ReceiveCANMessage(message, messageId, messageMask);
     if (status != rev::usb::CANStatus::kOk) {
+        if (status == rev::ubs::CANStatus::kTimeout) {
+            // We haven't received this message, which is not worth throwing an exception over
+            return Napi::Env::Undefined();
+        }
         Napi::Error::New(env, "Receiving message failed with status code " + std::to_string((int)status)).ThrowAsJavaScriptException();
         return Napi::Object::New(env);
     }
@@ -508,6 +512,26 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     for (uint32_t i = 0; i < dataParam.Length(); i++) {
         messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
     }
+    int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
+    if (status < 0) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    }
+    return Napi::Number::New(env, status);
+}
+
+// Params:
+//   descriptor: string
+//   messageId: Number
+//   requestedMessageLength: Number
+// Returns:
+//   status: Number
+Napi::Number sendCANRtrMessage(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
+    uint8_t requestedMessageLength = info[2].As<Napi::Number>().Uint8Value();
+
+    uint8_t messageData[0];
     int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
     if (status < 0) {
         Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
