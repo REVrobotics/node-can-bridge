@@ -1,0 +1,84 @@
+name: Build
+
+on:
+  [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-docker:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: wpilib/aarch64-cross-ubuntu:bullseye-22.04
+            name: LinuxARM64
+            platform-type: linuxarm64
+            arch: arm64
+          - container: wpilib/raspbian-cross-ubuntu:bullseye-22.04
+            name: LinuxARM32
+            platform-type: linuxarm32
+            arch: arm32
+    runs-on: ubuntu-latest
+    name: "Build - ${{ matrix.name }}"
+    container: ${{ matrix.container }}
+    steps:
+      - uses: actions/checkout@v4
+  
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+  
+      - name: Install dependencies
+        run: npm install
+
+      - name: Pretest
+        run: npm run pretest
+
+      # Due to the nature of the build process, we can't run the tests in the container becauase external hardware is required
+      # If this were to be running on a local machine, the tests would be run here
+      #- name: Test
+      #  run: npm test
+
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    name: "Build - ${{ matrix.os }}"
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Pretest
+      run: npm run pretest
+
+      # Due to the nature of the build process, we can't run the tests in the container becauase external hardware is required
+      # If this were to be running on a local machine, the tests would be run here
+      #- name: Test
+      #  run: npm test
