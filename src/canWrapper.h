@@ -12,6 +12,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info);
 Napi::Number closeStreamSession(const Napi::CallbackInfo& info);
 Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info);
 Napi::Number sendCANMessage(const Napi::CallbackInfo& info);
+Napi::Number sendRtrMessage(const Napi::CallbackInfo& info);
 Napi::Number sendCANMessageThroughHal(const Napi::CallbackInfo& info);
 Napi::Number sendHALMessage(const Napi::CallbackInfo& info);
 void initializeNotifier(const Napi::CallbackInfo& info);
