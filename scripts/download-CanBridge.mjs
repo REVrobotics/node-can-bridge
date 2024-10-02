@@ -7,7 +7,7 @@ const canBridgeTag = "v2.5.0";
 const canBridgeReleaseAssetUrlPrefix = `https://github.com/REVrobotics/CANBridge/releases/download/${canBridgeTag}`;
 
 const externalCompileTimeDepsPath = 'externalCompileTimeDeps';
-const runtimeArtifactsPath = path.join('prebuilds', 'win32-x64');
+const runtimeArtifactsPath = path.join('prebuilds', 'node_canbridge-win32-x64');
 const tempDir = 'temp';
 
 try {
