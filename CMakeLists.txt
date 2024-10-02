@@ -11,6 +11,10 @@ if(NOT CMAKE_JS_INC)
     setup_cmakejs()
 endif ()
 
+if(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/node_modules)
+    message(FATAL_ERROR "You must run 'npm install' in order for NAPI to be available")
+endif()
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(MSVC AND CMAKE_JS_NODELIB_DEF AND CMAKE_JS_NODELIB_TARGET)
