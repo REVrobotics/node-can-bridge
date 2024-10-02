@@ -62,6 +62,12 @@ target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge wpiHal wpiutil)
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps)
 
+# The ones that don't exist are just skipped
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64)
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64)
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32)
+target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal)
+
 include(move-files.cmake)
 
 foreach(CONFIG_TYPE IN LISTS CMAKE_CONFIGURATION_TYPES)
@@ -69,4 +75,24 @@ foreach(CONFIG_TYPE IN LISTS CMAKE_CONFIGURATION_TYPES)
     create_move_target(CANBridge.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/CANBridge.dll ${CONFIG_TYPE}/CANBridge.dll)
     create_move_target(wpiHal.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiHal.dll ${CONFIG_TYPE}/wpiHal.dll)
     create_move_target(wpiUtil.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiUtil.dll ${CONFIG_TYPE}/wpiUtil.dll)
+
+    # Linux x64
+    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
+    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
+    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
+
+    # Linux Arm 32
+    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
+    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
+    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
+
+    # Linux Arm 64
+    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
+    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
+    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
+
+    # macOS
+    create_move_target(CANBridge.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/CANBridge.dylib ${CONFIG_TYPE}/CANBridge.dylib)
+    create_move_target(wpiHal.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/wpiHal.dylib ${CONFIG_TYPE}/wpiHal.dylib)
+    create_move_target(wpiUtil.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/wpiUtil.dylib ${CONFIG_TYPE}/wpiUtil.dylib)
 endforeach()
