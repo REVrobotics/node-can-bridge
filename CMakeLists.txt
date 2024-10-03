@@ -32,7 +32,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     endif()
 endif()
 
-add_definitions(-DNAPI_VERSION=8) # Keep in sync with binding-options.cjs
+add_definitions(-DNAPI_VERSION=9) # Keep in sync with binding-options.cjs
 add_definitions(-DNAPI_DISABLE_CPP_EXCEPTIONS)
 
 set(SOURCES
