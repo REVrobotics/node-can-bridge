@@ -30,6 +30,6 @@
         "test": "echo running test && node --napi-modules test/test_binding.js"
     },
     "engines": {
-        "node": ">=12.0.0"
+        "node": ">=20.3.0"
     }
 }
