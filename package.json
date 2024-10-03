@@ -11,7 +11,6 @@
         "url": "https://github.com/REVrobotics/node-can-bridge.git"
     },
     "dependencies": {
-        "cmake-js": "^7.3.0",
         "node-addon-api": "^8.2.0",
         "pkg-prebuilds": "^1.0.0"
     },
@@ -20,7 +19,8 @@
         "@types/node": "^16.18.18",
         "adm-zip": "^0.5.10",
         "axios": "^1.3.6",
-        "typescript": "^5.0.2"
+        "typescript": "^5.0.2",
+        "cmake-js": "^7.3.0"
     },
     "scripts": {
         "install": "pkg-prebuilds-verify binding-options.cjs || npm run build",
