@@ -1,6 +1,6 @@
 {
     "name": "@rev-robotics/can-bridge",
-    "version": "3.4.0",
+    "version": "3.4.1",
     "author": "REV Robotics",
     "description": "Access CAN Data from a USB device in Node.js",
     "license": "MIT",
@@ -11,31 +11,28 @@
         "url": "https://github.com/REVrobotics/node-can-bridge.git"
     },
     "dependencies": {
-        "node-addon-api": "^6.0.0",
-        "node-gyp-build": "^4.8.1"
+        "node-addon-api": "^8.2.0",
+        "pkg-prebuilds": "^1.0.0"
     },
     "devDependencies": {
         "@types/adm-zip": "^0.5.0",
         "@types/node": "^16.18.18",
         "adm-zip": "^0.5.10",
         "axios": "^1.3.6",
-        "node-gyp": "^10.2.0",
-        "prebuildify": "^6.0.1",
+        "cmake-js": "^7.3.0",
         "typescript": "^5.0.2"
     },
     "scripts": {
-        "install": "node-gyp-build \"node scripts/download-CanBridge.mjs\"",
-        "prepublishOnly": "node scripts/download-CanBridge.mjs && tsc && prebuildify --napi",
-        "pretest": "node-gyp-build && tsc",
-        "test": "node --napi-modules test/test_binding.js"
+        "install": "pkg-prebuilds-verify binding-options.cjs || npm run build",
+        "build": "node scripts/download-CanBridge.mjs && cmake-js compile && tsc",
+        "prepublishOnly": "npm run build && pkg-prebuilds-copy --baseDir build/Release --source node_canbridge.node --name node_canbridge --napi_version=9",
+        "pretest": "npm run build",
+        "test": "echo running test && node --napi-modules test/test_binding.js"
     },
     "engines": {
-        "node": ">=12.0.0"
+        "node": ">=20.3.0"
     },
     "binary": {
-        "napi_versions": [
-            3
-        ]
-    },
-    "gypfile": true
+        "napi_versions": [9]
+    }
 }

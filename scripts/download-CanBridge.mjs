@@ -9,11 +9,11 @@ const canBridgeReleaseAssetUrlPrefix = `https://github.com/REVrobotics/CANBridge
 
 const externalCompileTimeDepsPath = 'externalCompileTimeDeps';
 const runtimeArtifactsPath = {
-    win: 'prebuilds/win32-x64',
-    osx: 'prebuilds/darwin-osxuniversal',
-    linux: 'prebuilds/linux-x64',
-    linuxArm: 'prebuilds/linux-arm64',
-    linuxArm32: 'prebuilds/linux-arm32'
+    win: path.join('prebuilds', 'node_canbridge-win32-x64'),
+    osx: path.join('prebuilds', 'node_canbridge-darwin-osxuniversal'),
+    linux: path.join('prebuilds', 'node_canbridge-linux-x64'),
+    linuxArm: path.join('prebuilds', 'node_canbridge-linux-arm64'),
+    linuxArm32: path.join('prebuilds', 'node_canbridge-linux-arm32')
 };
 const tempDir = 'temp';
 

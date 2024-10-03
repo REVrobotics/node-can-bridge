@@ -515,6 +515,34 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     return Napi::Number::New(env, status);
 }
 
+
+// Params:
+//   descriptor: string
+//   messageId: Number
+//   messageData: Number[]
+//   repeatPeriod: Number
+// Returns:
+//   status: Number
+Napi::Number sendRtrMessage(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t messageId = info[1].As<Napi::Number>().Uint32Value();
+    Napi::Array dataParam = info[2].As<Napi::Array>();
+    int repeatPeriodMs = info[3].As<Napi::Number>().Uint32Value();
+
+    messageId |= HAL_CAN_IS_FRAME_REMOTE;
+
+    uint8_t messageData[8];
+    for (uint32_t i = 0; i < dataParam.Length(); i++) {
+        messageData[i] = dataParam.Get(i).As<Napi::Number>().Uint32Value();
+    }
+    int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
+    if (status < 0) {
+        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+    }
+    return Napi::Number::New(env, status);
+}
+
 // Params:
 //   descriptor: string
 //   messageId: Number

@@ -33,8 +33,7 @@ export enum ThreadPriority {
     PriorityError
 }
 
-// Needs to match HAL_CAN_IS_FRAME_REMOTE
-export const RTR_FRAME_BIT = 0x80000000;
+let bindingOptions = require("../binding-options.cjs");
 
 export class CanBridgeInitializationError extends Error {
     cause: any;
@@ -54,6 +53,7 @@ export class CanBridge {
     readStreamSession: (descriptor:string, sessionHandle:number, messagesToRead:number) => CanMessage[];
     closeStreamSession: (descriptor:string, sessionHandle:number) => number;
     getCANDetailStatus: (descriptor:string) => CanDeviceStatus;
+    sendRtrMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number;
     sendCANMessage: (descriptor:string, messageId: number, messageData: number[], repeatPeriod: number) => number;
     sendHALMessage: (messageId: number, messageData: number[], repeatPeriod: number) => number;
     initializeNotifier: () => void;
@@ -71,7 +71,7 @@ export class CanBridge {
 
     constructor() {
         try {
-            const addon = require('node-gyp-build')(path.join(__dirname, '..'));
+            const addon = require("pkg-prebuilds")(path.join(__dirname, '..'), bindingOptions);
 
             this.getDevices = promisify(addon.getDevices);
             this.registerDeviceToHAL = addon.registerDeviceToHAL;
@@ -81,6 +81,7 @@ export class CanBridge {
             this.readStreamSession = addon.readStreamSession;
             this.closeStreamSession = addon.closeStreamSession;
             this.getCANDetailStatus = addon.getCANDetailStatus;
+            this.sendRtrMessage = addon.sendRtrMessage;
             this.sendCANMessage = addon.sendCANMessage;
             this.sendHALMessage = addon.sendHALMessage;
             this.initializeNotifier = addon.initializeNotifier;
