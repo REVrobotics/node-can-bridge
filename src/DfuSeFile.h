@@ -104,6 +104,11 @@ public:
     void Write(const std::string filename, const int elementIndex, writer::detail::FileWriter& writer) const {
         std::ofstream outputFile(filename, std::ofstream::binary);
         auto fw = writer.Clone();
+
+        if(elementIndex >= m_targets.size()) {
+            throw std::invalid_argument("Element index out of range");
+        }
+
         fw->Write(outputFile, m_targets[elementIndex]);
         outputFile.close();
     }
