@@ -31,7 +31,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "stopNotifier"),
                 Napi::Function::New(env, stopNotifier));
     exports.Set(Napi::String::New(env, "writeDfuToBin"),
-                Napi::Function::New(env, writeDfuToBin));
+    Napi::Function::New(env, writeDfuToBin));
+    exports.Set(Napi::String::New(env, "getImageElements"),
+                Napi::Function::New(env, getImageElements));
     exports.Set(Napi::String::New(env, "openHALStreamSession"),
                 Napi::Function::New(env, openHALStreamSession));
     exports.Set(Napi::String::New(env, "readHALStreamSession"),
