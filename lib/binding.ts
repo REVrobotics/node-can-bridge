@@ -64,7 +64,7 @@ export class CanBridge {
     initializeNotifier: () => void;
     waitForNotifierAlarm: (time:number) => Promise<number>;
     stopNotifier: () => void;
-    writeDfuToBin: (dfuFileName:string, elementIndex: number, binFileName:string) => Promise<number>;
+    writeDfuToBin: (dfuFileName:string, binFileName:string, elementIndex: number) => Promise<number>;
     getImageElements: (dfuFileName: string, imageIndex: number) => DfuImageElement[];
     openHALStreamSession: (messageId: number, messageMask:number, numMessages:number) => number;
     readHALStreamSession: (streamHandle:number, numMessages:number) => CanMessage[];
