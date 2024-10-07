@@ -93,7 +93,7 @@ export class CanBridge {
             this.initializeNotifier = addon.initializeNotifier;
             this.waitForNotifierAlarm = promisify(addon.waitForNotifierAlarm);
             this.stopNotifier = addon.stopNotifier;
-            this.writeDfuToBin = promisify(addon.writeDfuToBin);
+            this.writeDfuToBin = addon.writeDfuToBin;
             this.getImageElements = addon.getImageElements;
             this.openHALStreamSession = addon.openHALStreamSession;
             this.readHALStreamSession = addon.readHALStreamSession;

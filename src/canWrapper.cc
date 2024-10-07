@@ -671,11 +671,10 @@ void stopNotifier(const Napi::CallbackInfo& info) {
     HAL_CleanNotifier(m_notifier, &status);
 }
 
-void writeDfuToBin(const Napi::CallbackInfo& info) {
+Napi::Promise writeDfuToBin(const Napi::CallbackInfo& info) {
     std::string dfuFileName = info[0].As<Napi::String>().Utf8Value();
     std::string binFileName = info[1].As<Napi::String>().Utf8Value();
     const int elementIndex = info[2].As<Napi::Number>().Int32Value();
-    Napi::Function cb = info[3].As<Napi::Function>();
 
     dfuse::DFUFile dfuFile(dfuFileName.c_str());
     int status = 0;
@@ -684,7 +683,10 @@ void writeDfuToBin(const Napi::CallbackInfo& info) {
     } else {
         status = 1;
     }
-    cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+
+    deferred.Resolve(Napi::Number::New(info.Env(), status));
+    return deferred.Promise();
 }
 
 Napi::Array getImageElements(const Napi::CallbackInfo& info) {
