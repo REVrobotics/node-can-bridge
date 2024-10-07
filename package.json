@@ -8,7 +8,7 @@
     "types": "dist/binding.d.ts",
     "repository": {
         "type": "git",
-        "url": "https://github.com/REVrobotics/node-can-bridge.git"
+        "url": "git+https://github.com/REVrobotics/node-can-bridge.git"
     },
     "dependencies": {
         "node-addon-api": "^8.2.0",
@@ -33,6 +33,8 @@
         "node": ">=20.3.0"
     },
     "binary": {
-        "napi_versions": [9]
+        "napi_versions": [
+            9
+        ]
     }
 }
