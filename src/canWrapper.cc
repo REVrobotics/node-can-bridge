@@ -674,7 +674,13 @@ void stopNotifier(const Napi::CallbackInfo& info) {
 Napi::Promise writeDfuToBin(const Napi::CallbackInfo& info) {
     std::string dfuFileName = info[0].As<Napi::String>().Utf8Value();
     std::string binFileName = info[1].As<Napi::String>().Utf8Value();
-    const int elementIndex = info[2].As<Napi::Number>().Int32Value();
+    int elementIndex;
+
+    if(info[2].IsUndefined()) {
+        elementIndex = 0;
+    } else {
+        elementIndex = info[2].As<Napi::Number>().Int32Value();
+    }
 
     dfuse::DFUFile dfuFile(dfuFileName.c_str());
     int status = 0;
