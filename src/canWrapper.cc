@@ -676,7 +676,7 @@ Napi::Promise writeDfuToBin(const Napi::CallbackInfo& info) {
     std::string binFileName = info[1].As<Napi::String>().Utf8Value();
     int elementIndex;
 
-    if(info[2].IsUndefined()) {
+    if(info[2].IsUndefined() || info[2].IsNull()) {
         elementIndex = 0;
     } else {
         elementIndex = info[2].As<Napi::Number>().Int32Value();
