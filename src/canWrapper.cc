@@ -671,19 +671,57 @@ void stopNotifier(const Napi::CallbackInfo& info) {
     HAL_CleanNotifier(m_notifier, &status);
 }
 
-void writeDfuToBin(const Napi::CallbackInfo& info) {
+Napi::Promise writeDfuToBin(const Napi::CallbackInfo& info) {
     std::string dfuFileName = info[0].As<Napi::String>().Utf8Value();
     std::string binFileName = info[1].As<Napi::String>().Utf8Value();
-    Napi::Function cb = info[2].As<Napi::Function>();
+    int elementIndex;
+
+    if(info[2].IsUndefined() || info[2].IsNull()) {
+        elementIndex = 0;
+    } else {
+        elementIndex = info[2].As<Napi::Number>().Int32Value();
+    }
 
     dfuse::DFUFile dfuFile(dfuFileName.c_str());
     int status = 0;
     if (dfuFile && dfuFile.Images().size() > 0 && dfuFile.Images()[0]) {
-        dfuFile.Images()[0].Write(binFileName, dfuse::writer::Bin);
+        dfuFile.Images()[0].Write(binFileName, elementIndex, dfuse::writer::Bin);
     } else {
         status = 1;
     }
-    cb.Call(info.Env().Global(), {info.Env().Null(), Napi::Number::New(info.Env(), status)});
+    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+
+    deferred.Resolve(Napi::Number::New(info.Env(), status));
+    return deferred.Promise();
+}
+
+Napi::Array getImageElements(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string dfuFileName = info[0].As<Napi::String>().Utf8Value();
+    const int imageIndex = info[1].As<Napi::Number>().Int32Value();
+
+    Napi::Array elements = Napi::Array::New(env);
+
+    const dfuse::DFUFile dfuFile(dfuFileName.c_str());
+
+    if(imageIndex >= dfuFile.Images().size()) {
+        const std::string errorMessage = "Image index out of range";
+        Napi::Error::New(env, errorMessage).ThrowAsJavaScriptException();
+        return elements;
+    }
+
+    const dfuse::DFUImage image = dfuFile.Images()[imageIndex];
+
+    uint32_t elementsCount = 0;
+    for(auto element: image.Elements()) {
+        Napi::Object elementObject = Napi::Object::New(env);
+        elementObject.Set("startAddress", element.Address());
+        elementObject.Set("size", element.Size());
+
+        elements[elementsCount++] = elementObject;
+    }
+
+    return elements;
 }
 
 void cleanupHeartbeatsRunning() {
