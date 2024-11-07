@@ -50,6 +50,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
                 Napi::Function::New(env, stopHeartbeats));
     exports.Set(Napi::String::New(env, "ackHeartbeats"),
                 Napi::Function::New(env, ackHeartbeats));
+    exports.Set(Napi::String::New(env, "getTimestampsForAllReceivedMessages"),
+                Napi::Function::New(env, getTimestampsForAllReceivedMessages));
     return exports;
 }
 

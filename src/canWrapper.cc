@@ -724,6 +724,41 @@ Napi::Array getImageElements(const Napi::CallbackInfo& info) {
     return elements;
 }
 
+Napi::Object getTimestampsForAllReceivedMessages(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+
+    std::shared_ptr<rev::usb::CANDevice> device;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Object::New(env);
+        }
+        device = deviceIterator->second;
+    }
+
+    std::map<uint32_t, std::shared_ptr<rev::usb::CANMessage>> messages;
+    bool success = device->CopyReceivedMessagesMap(messages);
+    if (!success) {
+        Napi::Error::New(env, "Failed to copy the map of received messages").ThrowAsJavaScriptException();
+        return Napi::Object::New(env);
+    }
+
+    Napi::Object result = Napi::Object::New(env);
+    for (auto& m: messages) {
+        uint32_t arbId = m.first;
+        // GetTimestampUs() actually returns timestamps in milliseconds
+        uint32_t timestampMs = m.second->GetTimestampUs();
+        result.Set(arbId, timestampMs);
+    }
+
+    return result;
+}
+
 void cleanupHeartbeatsRunning() {
     // Erase removed CAN buses from heartbeatsRunning
     std::scoped_lock lock{watchdogMtx, canDevicesMtx};
