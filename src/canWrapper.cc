@@ -724,7 +724,7 @@ Napi::Array getImageElements(const Napi::CallbackInfo& info) {
     return elements;
 }
 
-Napi::Object getTimestampsForAllReceivedMessages(const Napi::CallbackInfo& info) {
+Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
 
@@ -751,9 +751,19 @@ Napi::Object getTimestampsForAllReceivedMessages(const Napi::CallbackInfo& info)
     Napi::Object result = Napi::Object::New(env);
     for (auto& m: messages) {
         uint32_t arbId = m.first;
-        // GetTimestampUs() actually returns timestamps in milliseconds
-        uint32_t timestampMs = m.second->GetTimestampUs();
-        result.Set(arbId, timestampMs);
+        auto message = m.second;
+
+        size_t messageSize = message->GetSize();
+        const uint8_t* messageData = message->GetData();
+        Napi::Array napiMessage = Napi::Array::New(env, messageSize);
+        for (int i = 0; i < messageSize; i++) {
+            napiMessage[i] =  messageData[i];
+        }
+        Napi::Object messageInfo = Napi::Object::New(env);
+        messageInfo.Set("messageID", message->GetMessageId());
+        messageInfo.Set("timeStamp", message->GetTimestampUs());
+        messageInfo.Set("data", napiMessage);
+        result.Set(arbId, messageInfo);
     }
 
     return result;

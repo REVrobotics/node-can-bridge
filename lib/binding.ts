@@ -75,9 +75,9 @@ export class CanBridge {
     stopHeartbeats: (descriptor: string, sendDisabledHeartbeatsFirst: boolean) => void;
     ackHeartbeats: () => void;
     /**
-     * @return Object that maps arbitration IDs to the timestamp a message with that ID was last received at
+     * @return Object that maps arbitration IDs to the last-received message with that ID
      */
-    getTimestampsForAllReceivedMessages: (descriptor: string) => Record<number, number>;
+    getLatestMessageOfEveryReceivedArbId: (descriptor: string) => Record<number, CanMessage>;
 
     constructor() {
         try {
@@ -107,7 +107,7 @@ export class CanBridge {
             this.startRevCommonHeartbeat = addon.startRevCommonHeartbeat;
             this.ackHeartbeats = addon.ackHeartbeats;
             this.stopHeartbeats = addon.stopHeartbeats;
-            this.getTimestampsForAllReceivedMessages = addon.getTimestampsForAllReceivedMessages;
+            this.getLatestMessageOfEveryReceivedArbId = addon.getLatestMessageOfEveryReceivedArbId;
         } catch (e: any) {
             throw new CanBridgeInitializationError(e);
         }
