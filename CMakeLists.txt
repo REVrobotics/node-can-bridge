@@ -8,7 +8,6 @@ project(node_canbridge)
 
 # Configure MSVC to build using static libraries
 # TODO: Determine if this is needed to stop requiring the Visual C++ redistributable
-cmake_policy(SET CMP0091 NEW)
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 
 if(NOT CMAKE_JS_INC)
@@ -61,8 +60,13 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 include_directories(${NODE_ADDON_API_DIR} ${CMAKE_JS_INC} ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps/include)
 
-add_library(${PROJECT_NAME} STATIC ${SOURCES} ${CMAKE_JS_SRC})
+add_library(${PROJECT_NAME} SHARED ${SOURCES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
-target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge wpiHal wpiutil)
-
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps)
+
+ADD_LIBRARY(CANBridge STATIC IMPORTED)
+SET_TARGET_PROPERTIES(CANBridge PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps/CANBridge.lib)
+
+# target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge wpiHal wpiutil)
+# target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps/CANBridge.lib)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge)
