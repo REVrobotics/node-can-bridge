@@ -6,6 +6,11 @@ set (CMAKE_CXX_STANDARD 20)
 
 project(node_canbridge)
 
+# Configure MSVC to build using static libraries
+# TODO: Determine if this is needed to stop requiring the Visual C++ redistributable
+cmake_policy(SET CMP0091 NEW)
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
+
 if(NOT CMAKE_JS_INC)
     include("cmake-js.cmake")
     setup_cmakejs()
@@ -56,43 +61,8 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 include_directories(${NODE_ADDON_API_DIR} ${CMAKE_JS_INC} ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps/include)
 
-add_library(${PROJECT_NAME} SHARED ${SOURCES} ${CMAKE_JS_SRC})
+add_library(${PROJECT_NAME} STATIC ${SOURCES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
 target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge wpiHal wpiutil)
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps)
-
-# The ones that don't exist are just skipped
-target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64)
-target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64)
-target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32)
-target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal)
-
-include(move-files.cmake)
-
-foreach(CONFIG_TYPE IN LISTS CMAKE_CONFIGURATION_TYPES)
-    # Windows
-    create_move_target(CANBridge.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/CANBridge.dll ${CONFIG_TYPE}/CANBridge.dll)
-    create_move_target(wpiHal.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiHal.dll ${CONFIG_TYPE}/wpiHal.dll)
-    create_move_target(wpiUtil.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiUtil.dll ${CONFIG_TYPE}/wpiUtil.dll)
-
-    # Linux x64
-    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
-    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
-    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-x64/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
-
-    # Linux Arm 32
-    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
-    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
-    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
-
-    # Linux Arm 64
-    create_move_target(CANBridge.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/CANBridge.so ${CONFIG_TYPE}/CANBridge.so)
-    create_move_target(wpiHal.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/wpiHal.so ${CONFIG_TYPE}/wpiHal.so)
-    create_move_target(wpiUtil.so ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm64/wpiUtil.so ${CONFIG_TYPE}/wpiUtil.so)
-
-    # macOS
-    create_move_target(CANBridge.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/CANBridge.dylib ${CONFIG_TYPE}/CANBridge.dylib)
-    create_move_target(wpiHal.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/wpiHal.dylib ${CONFIG_TYPE}/wpiHal.dylib)
-    create_move_target(wpiUtil.dylib ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal/wpiUtil.dylib ${CONFIG_TYPE}/wpiUtil.dylib)
-endforeach()
