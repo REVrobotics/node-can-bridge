@@ -724,6 +724,60 @@ Napi::Array getImageElements(const Napi::CallbackInfo& info) {
     return elements;
 }
 
+Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t maxAgeMs = info[1].As<Napi::Number>().Uint32Value();
+
+    std::shared_ptr<rev::usb::CANDevice> device;
+
+    { // This block exists to define how long we hold canDevicesMtx
+        std::scoped_lock lock{canDevicesMtx};
+        auto deviceIterator = canDeviceMap.find(descriptor);
+        if (deviceIterator == canDeviceMap.end()) {
+            if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
+            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            return Napi::Object::New(env);
+        }
+        device = deviceIterator->second;
+    }
+
+    std::map<uint32_t, std::shared_ptr<rev::usb::CANMessage>> messages;
+    bool success = device->CopyReceivedMessagesMap(messages);
+    if (!success) {
+        Napi::Error::New(env, "Failed to copy the map of received messages").ThrowAsJavaScriptException();
+        return Napi::Object::New(env);
+    }
+
+     // TODO(Harper): Use HAL clock
+    const auto nowMs = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+
+    Napi::Object result = Napi::Object::New(env);
+    for (auto& m: messages) {
+        uint32_t arbId = m.first;
+        auto message = m.second;
+        uint32_t timestampMs = message->GetTimestampUs();
+
+        if (nowMs - timestampMs > maxAgeMs) {
+            continue;
+        }
+
+        size_t messageSize = message->GetSize();
+        const uint8_t* messageData = message->GetData();
+        Napi::Array napiMessage = Napi::Array::New(env, messageSize);
+        for (int i = 0; i < messageSize; i++) {
+            napiMessage[i] =  messageData[i];
+        }
+        Napi::Object messageInfo = Napi::Object::New(env);
+        messageInfo.Set("messageID", message->GetMessageId());
+        messageInfo.Set("timeStamp", timestampMs);
+        messageInfo.Set("data", napiMessage);
+        result.Set(arbId, messageInfo);
+    }
+
+    return result;
+}
+
 void cleanupHeartbeatsRunning() {
     // Erase removed CAN buses from heartbeatsRunning
     std::scoped_lock lock{watchdogMtx, canDevicesMtx};

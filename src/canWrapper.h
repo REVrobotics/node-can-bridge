@@ -28,4 +28,5 @@ void setSparkMaxHeartbeatData(const Napi::CallbackInfo& info);
 void startRevCommonHeartbeat(const Napi::CallbackInfo& info);
 void stopHeartbeats(const Napi::CallbackInfo& info);
 void ackHeartbeats(const Napi::CallbackInfo& info);
+Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info);
 #endif
