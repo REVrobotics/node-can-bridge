@@ -77,7 +77,7 @@ export class CanBridge {
     /**
      * @return Object that maps arbitration IDs to the last-received message with that ID
      */
-    getLatestMessageOfEveryReceivedArbId: (descriptor: string) => Record<number, CanMessage>;
+    getLatestMessageOfEveryReceivedArbId: (descriptor: string, maxAgeMs: number) => Record<number, CanMessage>;
 
     constructor() {
         try {

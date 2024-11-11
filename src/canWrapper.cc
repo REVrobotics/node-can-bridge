@@ -727,6 +727,7 @@ Napi::Array getImageElements(const Napi::CallbackInfo& info) {
 Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     std::string descriptor = info[0].As<Napi::String>().Utf8Value();
+    uint32_t maxAgeMs = info[1].As<Napi::Number>().Uint32Value();
 
     std::shared_ptr<rev::usb::CANDevice> device;
 
@@ -748,10 +749,18 @@ Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info
         return Napi::Object::New(env);
     }
 
+     // TODO(Harper): Use HAL clock
+    const auto nowMs = std::chrono::time_point_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+
     Napi::Object result = Napi::Object::New(env);
     for (auto& m: messages) {
         uint32_t arbId = m.first;
         auto message = m.second;
+        uint32_t timestampMs = message->GetTimestampUs();
+
+        if (nowMs - timestampMs > maxAgeMs) {
+            continue;
+        }
 
         size_t messageSize = message->GetSize();
         const uint8_t* messageData = message->GetData();
@@ -761,7 +770,7 @@ Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info
         }
         Napi::Object messageInfo = Napi::Object::New(env);
         messageInfo.Set("messageID", message->GetMessageId());
-        messageInfo.Set("timeStamp", message->GetTimestampUs());
+        messageInfo.Set("timeStamp", timestampMs);
         messageInfo.Set("data", napiMessage);
         result.Set(arbId, messageInfo);
     }
