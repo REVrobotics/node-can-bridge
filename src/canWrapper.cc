@@ -21,8 +21,6 @@
 #include "canWrapper.h"
 #include "DfuSeFile.h"
 
-#define DEVICE_NOT_FOUND_ERROR "Device not found. Make sure to run getDevices()"
-
 #define REV_COMMON_HEARTBEAT_ID 0x00502C0
 #define SPARK_HEARTBEAT_ID 0x2052C80
 #define HEARTBEAT_PERIOD_MS 20
@@ -49,6 +47,12 @@ bool heartbeatTimeoutExpired = true; // Should only be changed in heartbeatsWatc
 std::map<std::string, std::array<uint8_t, REV_COMMON_HEARTBEAT_LENGTH>> revCommonHeartbeatMap;
 std::map<std::string, std::array<uint8_t, SPARK_HEARTBEAT_LENGTH>> sparkHeartbeatMap;
 auto latestHeartbeatAck = std::chrono::time_point<std::chrono::steady_clock>();
+
+void throwDeviceNotFoundError(Napi::Env env) {
+    Napi::Error error = Napi::Error::New(env, "CAN bridge device not found. Make sure to run getDevices()");
+    error.Set("canBridgeDeviceNotFound", Napi::Boolean::New(env, true));
+    error.ThrowAsJavaScriptException();
+}
 
 // Only call when holding canDevicesMtx
 void removeExtraDevicesFromDeviceMap(std::vector<std::string> descriptors) {
@@ -226,7 +230,7 @@ Napi::Object receiveMessage(const Napi::CallbackInfo& info) {
         auto deviceIterator = canDeviceMap.find(descriptor);
         if (deviceIterator == canDeviceMap.end()) {
             if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
-            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            throwDeviceNotFoundError(env);
             return Napi::Object::New(env);
         }
 
@@ -325,7 +329,7 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
         std::scoped_lock lock{canDevicesMtx};
         auto deviceIterator = canDeviceMap.find(descriptor);
         if (deviceIterator == canDeviceMap.end()) {
-            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            throwDeviceNotFoundError(env);
             return Napi::Number::New(env, 0);
         }
 
@@ -366,7 +370,7 @@ Napi::Array readStreamSession(const Napi::CallbackInfo& info) {
         std::scoped_lock lock{canDevicesMtx};
         auto deviceIterator = canDeviceMap.find(descriptor);
         if (deviceIterator == canDeviceMap.end()) {
-            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            throwDeviceNotFoundError(env);
             return Napi::Array::New(env);
         }
 
@@ -415,7 +419,7 @@ Napi::Number closeStreamSession(const Napi::CallbackInfo& info) {
     std::scoped_lock lock{canDevicesMtx};
     auto deviceIterator = canDeviceMap.find(descriptor);
     if (deviceIterator == canDeviceMap.end()) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        throwDeviceNotFoundError(env);
         return Napi::Number::New(env, 0);
     }
 
@@ -438,7 +442,7 @@ Napi::Object getCANDetailStatus(const Napi::CallbackInfo& info) {
         std::scoped_lock lock{canDevicesMtx};
         auto deviceIterator = canDeviceMap.find(descriptor);
         if (deviceIterator == canDeviceMap.end()) {
-            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            throwDeviceNotFoundError(env);
             return Napi::Object::New(env);
         }
 
@@ -510,7 +514,7 @@ Napi::Number sendCANMessage(const Napi::CallbackInfo& info) {
     }
     int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
     if (status < 0) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        throwDeviceNotFoundError(env);
     }
     return Napi::Number::New(env, status);
 }
@@ -538,7 +542,7 @@ Napi::Number sendRtrMessage(const Napi::CallbackInfo& info) {
     }
     int status = _sendCANMessage(descriptor, messageId, messageData, dataParam.Length(), repeatPeriodMs);
     if (status < 0) {
-        Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+        throwDeviceNotFoundError(env);
     }
     return Napi::Number::New(env, status);
 }
@@ -736,7 +740,7 @@ Napi::Object getLatestMessageOfEveryReceivedArbId(const Napi::CallbackInfo& info
         auto deviceIterator = canDeviceMap.find(descriptor);
         if (deviceIterator == canDeviceMap.end()) {
             if (devicesRegisteredToHal.find(descriptor) != devicesRegisteredToHal.end()) return receiveHalMessage(info);
-            Napi::Error::New(env, DEVICE_NOT_FOUND_ERROR).ThrowAsJavaScriptException();
+            throwDeviceNotFoundError(env);
             return Napi::Object::New(env);
         }
         device = deviceIterator->second;
