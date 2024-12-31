@@ -58,7 +58,7 @@ include_directories(${NODE_ADDON_API_DIR} ${CMAKE_JS_INC} ${CMAKE_CURRENT_SOURCE
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${CMAKE_JS_SRC})
 set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "" SUFFIX ".node")
-target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge wpiHal wpiutil)
+target_link_libraries(${PROJECT_NAME} ${CMAKE_JS_LIB} CANBridge-static wpiHal wpiutil)
 
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/externalCompileTimeDeps)
 
@@ -68,11 +68,17 @@ target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebu
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-linux-arm32)
 target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-darwin-osxuniversal)
 
+# Link against Visual C++ CRT statically
+if(WIN32)
+    target_compile_options(${PROJECT_NAME} PUBLIC /MT)
+endif()
+
 include(move-files.cmake)
 
+# TODO: Delete this whole section once we're linking against all libraries statically
 foreach(CONFIG_TYPE IN LISTS CMAKE_CONFIGURATION_TYPES)
     # Windows
-    create_move_target(CANBridge.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/CANBridge.dll ${CONFIG_TYPE}/CANBridge.dll)
+    # create_move_target(CANBridge.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/CANBridge.dll ${CONFIG_TYPE}/CANBridge.dll)
     create_move_target(wpiHal.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiHal.dll ${CONFIG_TYPE}/wpiHal.dll)
     create_move_target(wpiUtil.dll ${CMAKE_CURRENT_SOURCE_DIR}/prebuilds/node_canbridge-win32-x64/wpiUtil.dll ${CONFIG_TYPE}/wpiUtil.dll)
 

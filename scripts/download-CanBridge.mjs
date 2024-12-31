@@ -12,8 +12,9 @@ const tempDir = 'temp';
 
 try {
     await Promise.all(Array.of(
-        downloadCanBridgeArtifact('CANBridge.lib', externalCompileTimeDepsPath),
-        downloadCanBridgeArtifact('CANBridge.dll', runtimeArtifactsPath),
+        downloadCanBridgeArtifact('CANBridge-static.lib', externalCompileTimeDepsPath),
+        // TODO: Download static versions of wpiHal and wpiutil
+        //       (consider merging https://github.com/REVrobotics/CANBridge/pull/37)
         downloadCanBridgeArtifact('wpiHal.lib', externalCompileTimeDepsPath),
         downloadCanBridgeArtifact('wpiHal.dll', runtimeArtifactsPath),
         downloadCanBridgeArtifact('wpiutil.lib', externalCompileTimeDepsPath),
