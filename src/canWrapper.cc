@@ -339,7 +339,7 @@ Napi::Number openStreamSession(const Napi::CallbackInfo& info) {
     try {
         rev::usb::CANStatus status = device->OpenStreamSession(&sessionHandle, filter, maxSize);
         if (status != rev::usb::CANStatus::kOk) {
-            Napi::Error::New(env, "Opening stream session failed with error code "+(int)status).ThrowAsJavaScriptException();
+            Napi::Error::New(env, "Opening stream session failed with error code " + std::to_string((int)status)).ThrowAsJavaScriptException();
         } else {
             return Napi::Number::New(env, sessionHandle);
         }
